@@ -345,6 +345,7 @@ export async function POST(
       }
 
       // Send confirmation email
+      let emailSent = false;
       if (user.email) {
         const event = await prisma.event.findUnique({
           where: { id: eventId },
@@ -372,12 +373,21 @@ Best regards,
 Rift Finance Team
           `.trim();
 
-          await sendEmail({
-            to: user.email,
-            subject: `RSVP Confirmed: ${event.title}`,
-            text: emailBody,
-          });
+          try {
+            await sendEmail({
+              to: user.email,
+              subject: `RSVP Confirmed: ${event.title}`,
+              text: emailBody,
+            });
+            emailSent = true;
+            console.log(`Confirmation email sent to ${user.email} for event ${event.title}`);
+          } catch (emailError) {
+            console.error('Error sending confirmation email:', emailError);
+            // Don't fail the request if email fails, but log it
+          }
         }
+      } else {
+        console.warn(`User ${user.id} does not have an email address, skipping email notification`);
       }
 
       return NextResponse.json({
@@ -385,6 +395,8 @@ Rift Finance Team
         message: 'Payment confirmed and RSVP created',
         receiptNumber: receiptNumber,
         status: paymentStatus,
+        emailSent: emailSent,
+        userEmail: user.email || null,
       });
     } else {
       // Payment not yet successful, but transaction info is saved

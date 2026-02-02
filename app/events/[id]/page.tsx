@@ -53,6 +53,8 @@ export default function EventDetailsPage() {
   const [isCheckingBalance, setIsCheckingBalance] = useState(false);
   const [buyingRate, setBuyingRate] = useState<number | null>(null); // For displaying KES
   const [sellingRate, setSellingRate] = useState<number | null>(null); // For invoice calculations
+  const [emailSent, setEmailSent] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   // Check for payment redirect query parameters
   useEffect(() => {
@@ -107,6 +109,21 @@ export default function EventDetailsPage() {
           setPaymentStatus('failed');
         }
         throw new Error(data.error || 'Failed to process payment');
+      }
+
+      const data = await response.json();
+      
+      // If payment was successful, check if email was sent
+      if (data.success && (data.status === 'success' || data.status === 'confirmed')) {
+        setPaymentStatus('success');
+        setHasRsvped(true);
+        if (data.emailSent) {
+          setEmailSent(true);
+          setUserEmail(data.userEmail);
+        }
+      } else if (data.success && data.status === 'pending') {
+        // Payment is still processing
+        setPaymentStatus('pending');
       }
 
       // Refresh event details to show updated status
@@ -262,6 +279,10 @@ export default function EventDetailsPage() {
         setHasRsvped(true);
         setPaymentStatus('success');
         setError('');
+        if (result.emailSent) {
+          setEmailSent(true);
+          setUserEmail(result.userEmail);
+        }
         // Refresh event details
         await fetchEventDetails();
         await checkWalletBalance();
@@ -607,6 +628,14 @@ export default function EventDetailsPage() {
                             ✅ Payment successful! Your RSVP is confirmed.
                           </AlertDescription>
                         </Alert>
+                        {emailSent && userEmail && (
+                          <Alert className="bg-blue-50 border-blue-200">
+                            <AlertDescription className="text-blue-800">
+                              📧 A confirmation email has been sent to <strong>{userEmail}</strong>. 
+                              Please check your inbox and spam folder for your receipt and event details.
+                            </AlertDescription>
+                          </Alert>
+                        )}
                         {event && (
                           <Button
                             onClick={() => {

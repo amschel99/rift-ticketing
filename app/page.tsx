@@ -25,7 +25,7 @@ export default function HomePage() {
   const { user, bearerToken } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [buyingRate, setBuyingRate] = useState<number | null>(null);
+  const [sellingRate, setSellingRate] = useState<number | null>(null); // For displaying ticket prices in KES
 
   useEffect(() => {
     fetchFeaturedEvents();
@@ -37,14 +37,14 @@ export default function HomePage() {
       const response = await fetch('/api/exchange-rate');
       if (response.ok) {
         const data = await response.json();
-        setBuyingRate(data.buyingRate || data.rate || null);
+        setSellingRate(data.sellingRate || data.rate || null);
       } else {
         console.error('Failed to fetch exchange rate');
-        setBuyingRate(null);
+        setSellingRate(null);
       }
     } catch (err) {
       console.error('Error fetching exchange rate:', err);
-      setBuyingRate(null);
+      setSellingRate(null);
     }
   };
 
@@ -165,9 +165,9 @@ export default function HomePage() {
                         <div className="mt-4 flex items-center justify-between pt-4 border-t border-[#E9F1F4]">
                           {/* Price is stored in USD, convert to KES for display */}
                           <div className="text-lg font-semibold text-[#2E8C96]">
-                            {buyingRate ? (
+                            {sellingRate ? (
                               <>
-                                KES {(event.price * buyingRate).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                KES {(event.price * sellingRate).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 <span className="text-sm text-gray-500 ml-1">(≈ {event.price.toFixed(2)} USD)</span>
                               </>
                             ) : (

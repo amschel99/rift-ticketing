@@ -10,7 +10,13 @@ import { Footer } from '@/components/footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Calendar, MapPin, Users, DollarSign, Share2, Edit, Trash2, BarChart3 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Calendar, MapPin, Users, Share2, Edit, Trash2, BarChart3 } from 'lucide-react';
 
 interface Event {
   id: string;
@@ -113,10 +119,27 @@ export default function EventDetailsPage() {
 
   useEffect(() => {
     fetchEventDetails();
+    fetchExchangeRate(); // Fetch exchange rate for price display (works for all users)
     if (user && bearerToken) {
       checkWalletBalance();
     }
   }, [eventId, user, bearerToken]);
+
+  const fetchExchangeRate = async () => {
+    try {
+      const response = await fetch('/api/exchange-rate');
+      if (response.ok) {
+        const data = await response.json();
+        setSellingRate(data.sellingRate || data.rate || null);
+      } else {
+        console.error('Failed to fetch exchange rate');
+        setSellingRate(null);
+      }
+    } catch (err) {
+      console.error('Error fetching exchange rate:', err);
+      setSellingRate(null);
+    }
+  };
 
   const checkWalletBalance = async () => {
     if (!bearerToken) return;
@@ -312,15 +335,15 @@ export default function EventDetailsPage() {
   const spotsLeft = event.capacity - confirmedRsvpsCount;
   const isFull = spotsLeft <= 0;
   
-  // Price is stored in USD, convert to KES for display
-  const eventPriceInKES = buyingRate ? (event.price * buyingRate) : event.price;
+  // Price is stored in USD, convert to KES for display using selling_rate
+  const eventPriceInKES = sellingRate ? (event.price * sellingRate) : null;
   const eventPriceInUSDC = event.price; // Price is already in USD
 
   return (
     <>
       <Navigation />
       <div className="min-h-screen bg-[#E9F1F4] py-8 px-4">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-7xl mx-auto">
         {/* Back Button */}
         <button
           onClick={() => router.back()}
@@ -329,23 +352,25 @@ export default function EventDetailsPage() {
           ← Back to Events
         </button>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
+            <Card className="p-0 overflow-hidden">
+              <CardHeader className="p-0">
                 {/* Event Image */}
                 {event.image && (
-                  <div className="mb-4 -mx-6 -mt-6 relative w-full h-64">
+                  <div className="relative w-full h-96 lg:h-[500px] overflow-hidden">
                     <Image 
                       src={event.image} 
                       alt={event.title}
                       fill
                       className="object-cover"
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 66vw, 50vw"
+                      priority
                     />
                   </div>
                 )}
+                <div className="px-6 pt-6">
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <span className="text-xs font-semibold text-[#2E8C96] bg-[#E9F1F4] px-3 py-1 rounded-full">
@@ -384,24 +409,75 @@ export default function EventDetailsPage() {
                         </Button>
                       </>
                     )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        navigator.clipboard.writeText(
-                          `${window.location.origin}/events/${event.id}?url=${event.shareableUrl}`
-                        );
-                        alert('Event link copied to clipboard!');
-                      }}
-                    >
-                      <Share2 className="w-4 h-4 mr-2" />
-                      Share
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <Share2 className="w-4 h-4 mr-2" />
+                          Share
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem
+                          onClick={() => {
+                            const url = `${window.location.origin}/events/${event.id}?url=${event.shareableUrl}`;
+                            const text = `Check out this event: ${event.title}`;
+                            window.open(`https://wa.me/?text=${encodeURIComponent(`${text} ${url}`)}`, '_blank');
+                          }}
+                        >
+                          <span className="mr-2">📱</span> WhatsApp
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            const url = `${window.location.origin}/events/${event.id}?url=${event.shareableUrl}`;
+                            const text = `Check out this event: ${event.title}`;
+                            window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank');
+                          }}
+                        >
+                          <span className="mr-2">✈️</span> Telegram
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            const url = `${window.location.origin}/events/${event.id}?url=${event.shareableUrl}`;
+                            const text = `Check out this event: ${event.title}`;
+                            window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank');
+                          }}
+                        >
+                          <span className="mr-2">🐦</span> Twitter/X
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            const url = `${window.location.origin}/events/${event.id}?url=${event.shareableUrl}`;
+                            window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
+                          }}
+                        >
+                          <span className="mr-2">👤</span> Facebook
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            const url = `${window.location.origin}/events/${event.id}?url=${event.shareableUrl}`;
+                            window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank');
+                          }}
+                        >
+                          <span className="mr-2">💼</span> LinkedIn
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            navigator.clipboard.writeText(
+                              `${window.location.origin}/events/${event.id}?url=${event.shareableUrl}`
+                            );
+                            alert('Event link copied to clipboard!');
+                          }}
+                        >
+                          <span className="mr-2">🔗</span> Copy Link
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
-                <CardTitle className="text-3xl">{event.title}</CardTitle>
+                <CardTitle className="text-3xl mb-4">{event.title}</CardTitle>
+                </div>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="px-6 pb-6 space-y-6">
                 {/* Event Details */}
                 <div className="space-y-3">
                   <div className="flex items-start gap-3">
@@ -431,12 +507,17 @@ export default function EventDetailsPage() {
                   </div>
 
                       <div className="flex items-start gap-3">
-                        <DollarSign className="w-5 h-5 text-gray-600 mt-1" />
                         <div>
                           <p className="text-sm text-gray-500">Price</p>
                           <p className="font-semibold text-lg">
-                            KES {eventPriceInKES.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            {buyingRate && <span className="text-sm text-gray-500 ml-2">(≈ {event.price.toFixed(2)} USD)</span>}
+                            {eventPriceInKES !== null ? (
+                              <>
+                                KES {eventPriceInKES.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                <span className="text-sm text-gray-500 ml-2">(≈ {event.price.toFixed(2)} USD)</span>
+                              </>
+                            ) : (
+                              <>{event.price.toFixed(2)} USD</>
+                            )}
                           </p>
                         </div>
                       </div>
@@ -472,12 +553,18 @@ export default function EventDetailsPage() {
                 ) : (
                   <>
                     <div className="mb-4">
-                      <p className="text-3xl font-bold text-[#2E8C96]">
-                        KES {eventPriceInKES.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </p>
-                      {buyingRate && (
-                        <p className="text-sm text-gray-600">
-                          ≈ {event.price.toFixed(2)} USD per ticket
+                      {eventPriceInKES !== null ? (
+                        <>
+                          <p className="text-3xl font-bold text-[#2E8C96]">
+                            KES {eventPriceInKES.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            ≈ {event.price.toFixed(2)} USD per ticket
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-3xl font-bold text-[#2E8C96]">
+                          {event.price.toFixed(2)} USD
                         </p>
                       )}
                     </div>
@@ -559,7 +646,11 @@ export default function EventDetailsPage() {
                           className="w-full"
                           size="lg"
                         >
-                          Pay KES {eventPriceInKES.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} - Complete RSVP
+                          {eventPriceInKES !== null ? (
+                            <>Pay KES {eventPriceInKES.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} - Complete RSVP</>
+                          ) : (
+                            <>Pay {event.price.toFixed(2)} USD - Complete RSVP</>
+                          )}
                         </Button>
                         <p className="text-xs text-gray-500 text-center">
                           Your RSVP will be confirmed after payment
@@ -580,7 +671,13 @@ export default function EventDetailsPage() {
                                 className="w-full bg-[#30a46c] hover:bg-[#2a8a5a] text-white"
                                 size="lg"
                               >
-                                {isRsvping ? 'Processing...' : `Pay with Wallet (KES ${eventPriceInKES.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`}
+                                {isRsvping ? 'Processing...' : (
+                                  eventPriceInKES !== null ? (
+                                    `Pay with Wallet (KES ${eventPriceInKES.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`
+                                  ) : (
+                                    `Pay with Wallet (${event.price.toFixed(2)} USD)`
+                                  )
+                                )}
                               </Button>
                             ) : (
                               <p className="text-xs text-[#ffd13f]">
@@ -596,7 +693,13 @@ export default function EventDetailsPage() {
                           size="lg"
                           variant={walletBalance !== null && walletBalance >= eventPriceInUSDC ? "outline" : "default"}
                         >
-                          {isRsvping ? 'Generating payment link...' : `Checkout (KES ${eventPriceInKES.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`}
+                          {isRsvping ? 'Generating payment link...' : (
+                            eventPriceInKES !== null ? (
+                              `Checkout (KES ${eventPriceInKES.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`
+                            ) : (
+                              `Checkout (${event.price.toFixed(2)} USD)`
+                            )
+                          )}
                         </Button>
                       </div>
                     )}

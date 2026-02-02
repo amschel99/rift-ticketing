@@ -8,7 +8,13 @@ import { Footer } from '@/components/footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Calendar, MapPin, Users, DollarSign, Search } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Calendar, MapPin, Users, Search, Share2 } from 'lucide-react';
 import Image from 'next/image';
 
 interface Event {
@@ -34,7 +40,7 @@ export default function EventsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('ALL');
-  const [buyingRate, setBuyingRate] = useState<number | null>(null); // For KES conversion
+  const [sellingRate, setSellingRate] = useState<number | null>(null); // For displaying ticket prices in KES
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
@@ -48,14 +54,14 @@ export default function EventsPage() {
       const response = await fetch('/api/exchange-rate');
       if (response.ok) {
         const data = await response.json();
-        setBuyingRate(data.buyingRate || data.rate || null);
+        setSellingRate(data.sellingRate || data.rate || null);
       } else {
         console.error('Failed to fetch exchange rate');
-        setBuyingRate(null);
+        setSellingRate(null);
       }
     } catch (err) {
       console.error('Error fetching exchange rate:', err);
-      setBuyingRate(null);
+      setSellingRate(null);
     }
   };
 
@@ -197,77 +203,155 @@ export default function EventsPage() {
               const eventDate = new Date(event.date);
               const confirmedRsvpsCount = event.rsvps.filter(r => r.status === 'CONFIRMED').length;
               const spotsLeft = event.capacity - confirmedRsvpsCount;
-              // Price is stored in USD, convert to KES for display
-              const eventPriceInKES = buyingRate ? (event.price * buyingRate) : null;
+              // Price is stored in USD, convert to KES for display using selling_rate
+              const eventPriceInKES = sellingRate ? (event.price * sellingRate) : null;
 
               return (
-                <Card key={event.id} className="hover:shadow-lg transition-shadow">
+                <Card key={event.id} className="hover:shadow-xl transition-all duration-300 overflow-hidden border border-[#E9F1F4] hover:border-[#2E8C96] group p-0">
                   {event.image && (
-                    <div className="relative w-full h-48 rounded-t-lg overflow-hidden">
-                      <Image src={event.image} alt={event.title} fill className="object-cover" />
+                    <div className="relative w-full h-56 overflow-hidden bg-gradient-to-br from-[#2E8C96] to-[#2A7A84]">
+                      <Image 
+                        src={event.image} 
+                        alt={event.title} 
+                        fill 
+                        className="object-cover group-hover:scale-105 transition-transform duration-300" 
+                      />
+                      <div className="absolute top-3 left-3 right-3 flex justify-between items-start">
+                        <span className="text-xs font-semibold text-white bg-[#2E8C96]/90 backdrop-blur-sm px-3 py-1 rounded-full">
+                          {event.category}
+                        </span>
+                        {event.isOnline && (
+                          <span className="text-xs font-semibold text-white bg-[#30a46c]/90 backdrop-blur-sm px-3 py-1 rounded-full">
+                            Online
+                          </span>
+                        )}
+                      </div>
                     </div>
                   )}
-                  <CardHeader>
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="text-xs font-semibold text-[#2E8C96] bg-[#E9F1F4] px-2 py-1 rounded">
-                        {event.category}
-                      </span>
-                      {event.isOnline && (
-                        <span className="text-xs font-semibold text-[#30a46c] bg-[#adddc0] px-2 py-1 rounded">
-                          Online
+                  {!event.image && (
+                    <div className="relative w-full h-56 overflow-hidden bg-gradient-to-br from-[#2E8C96] to-[#2A7A84] flex items-center justify-center">
+                      <div className="absolute top-3 left-3 right-3 flex justify-between items-start">
+                        <span className="text-xs font-semibold text-white bg-[#2E8C96]/90 backdrop-blur-sm px-3 py-1 rounded-full">
+                          {event.category}
                         </span>
-                      )}
+                        {event.isOnline && (
+                          <span className="text-xs font-semibold text-white bg-[#30a46c]/90 backdrop-blur-sm px-3 py-1 rounded-full">
+                            Online
+                          </span>
+                        )}
+                      </div>
+                      <Calendar className="h-16 w-16 text-white/20" />
                     </div>
-                    <CardTitle className="line-clamp-2">{event.title}</CardTitle>
-                    <CardDescription className="line-clamp-2">{event.description}</CardDescription>
+                  )}
+                  <CardHeader className="pb-3 px-6 pt-6">
+                    <CardTitle className="line-clamp-2 text-xl mb-2 group-hover:text-[#2E8C96] transition-colors">
+                      {event.title}
+                    </CardTitle>
+                    <CardDescription className="line-clamp-2 text-sm text-gray-600">
+                      {event.description}
+                    </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <Calendar className="w-4 h-4" />
-                        {eventDate.toLocaleDateString()}
+                  <CardContent className="space-y-4 pt-0 px-6 pb-6">
+                    <div className="space-y-2.5 text-sm">
+                      <div className="flex items-center gap-2 text-gray-700">
+                        <Calendar className="w-4 h-4 text-[#2E8C96]" />
+                        <span>{eventDate.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</span>
                       </div>
                       {!event.isOnline && (
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <MapPin className="w-4 h-4" />
-                          {event.location}
+                        <div className="flex items-center gap-2 text-gray-700">
+                          <MapPin className="w-4 h-4 text-[#2E8C96]" />
+                          <span className="line-clamp-1">{event.location}</span>
                         </div>
                       )}
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <Users className="w-4 h-4" />
-                        {confirmedRsvpsCount} / {event.capacity} attendees ({spotsLeft} left)
+                      <div className="flex items-center gap-2 text-gray-700">
+                        <Users className="w-4 h-4 text-[#2E8C96]" />
+                        <span>{confirmedRsvpsCount} / {event.capacity} attendees</span>
+                        <span className="text-xs text-gray-500">({spotsLeft} left)</span>
                       </div>
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <DollarSign className="w-4 h-4" />
+                      <div className="flex items-center gap-2 text-gray-700 font-semibold">
                         {eventPriceInKES !== null ? (
                           <>
-                            KES {eventPriceInKES.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            <span className="text-sm text-gray-500 ml-1">(≈ {event.price.toFixed(2)} USD)</span>
+                            <span className="text-[#2E8C96]">KES {eventPriceInKES.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            <span className="text-xs text-gray-500 font-normal">(≈ {event.price.toFixed(2)} USD)</span>
                           </>
                         ) : (
-                          <span>{event.price.toFixed(2)} USD</span>
+                          <span className="text-[#2E8C96]">{event.price.toFixed(2)} USD</span>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 pt-2 border-t border-[#E9F1F4]">
                       <Link href={`/events/${event.id}`} className="flex-1">
-                        <Button variant="outline" className="w-full bg-transparent">
+                        <Button className="w-full bg-[#2E8C96] hover:bg-[#2A7A84] text-white">
                           View Details
                         </Button>
                       </Link>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          navigator.clipboard.writeText(
-                            `${window.location.origin}/events/${event.id}?url=${event.shareableUrl}`
-                          );
-                          alert('Event link copied!');
-                        }}
-                      >
-                        Share
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-[#2E8C96] text-[#2E8C96] hover:bg-[#2E8C96] hover:text-white"
+                          >
+                            <Share2 className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              const url = `${window.location.origin}/events/${event.id}?url=${event.shareableUrl}`;
+                              const text = `Check out this event: ${event.title}`;
+                              window.open(`https://wa.me/?text=${encodeURIComponent(`${text} ${url}`)}`, '_blank');
+                            }}
+                          >
+                            <span className="mr-2">📱</span> WhatsApp
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              const url = `${window.location.origin}/events/${event.id}?url=${event.shareableUrl}`;
+                              const text = `Check out this event: ${event.title}`;
+                              window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank');
+                            }}
+                          >
+                            <span className="mr-2">✈️</span> Telegram
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              const url = `${window.location.origin}/events/${event.id}?url=${event.shareableUrl}`;
+                              const text = `Check out this event: ${event.title}`;
+                              window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank');
+                            }}
+                          >
+                            <span className="mr-2">🐦</span> Twitter/X
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              const url = `${window.location.origin}/events/${event.id}?url=${event.shareableUrl}`;
+                              window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
+                            }}
+                          >
+                            <span className="mr-2">👤</span> Facebook
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              const url = `${window.location.origin}/events/${event.id}?url=${event.shareableUrl}`;
+                              window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank');
+                            }}
+                          >
+                            <span className="mr-2">💼</span> LinkedIn
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              navigator.clipboard.writeText(
+                                `${window.location.origin}/events/${event.id}?url=${event.shareableUrl}`
+                              );
+                              alert('Event link copied to clipboard!');
+                            }}
+                          >
+                            <span className="mr-2">🔗</span> Copy Link
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </CardContent>
                 </Card>

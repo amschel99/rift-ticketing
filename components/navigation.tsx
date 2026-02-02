@@ -58,7 +58,7 @@ export function Navigation() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="flex items-center gap-2">
                     <User className="w-4 h-4" />
-                    <span className="hidden sm:inline">{user.externalId}</span>
+                    <span className="hidden sm:inline">{user.name || user.externalId}</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">

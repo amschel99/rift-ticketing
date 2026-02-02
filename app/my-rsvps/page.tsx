@@ -8,7 +8,7 @@ import { Footer } from '@/components/footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Calendar, MapPin, DollarSign, ReceiptText, Hash, ExternalLink } from 'lucide-react';
+import { Calendar, MapPin, ReceiptText, Hash, ExternalLink } from 'lucide-react';
 import Image from 'next/image';
 
 interface RSVP {
@@ -26,7 +26,6 @@ interface RSVP {
   createdAt: string;
   receiptNumber?: string | null; // M-Pesa receipt
   transactionCode?: string | null; // Transaction hash/URL
-  buyingRate?: number; // Exchange rate from API
 }
 
 export default function MyRSVPsPage() {
@@ -34,8 +33,31 @@ export default function MyRSVPsPage() {
   const { user, bearerToken } = useAuth();
   const [rsvps, setRsvps] = useState<RSVP[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [sellingRate, setSellingRate] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!user) {
+      router.push('/auth/login');
+      return;
+    }
+    fetchRSVPs();
+    fetchExchangeRate();
+  }, [user, bearerToken, router]);
+
+  const fetchExchangeRate = async () => {
+    try {
+      const response = await fetch('/api/exchange-rate');
+      if (response.ok) {
+        const data = await response.json();
+        setSellingRate(data.sellingRate || data.rate || null);
+      }
+    } catch (err) {
+      console.error('Error fetching exchange rate:', err);
+    }
+  };
 
   const fetchRSVPs = async () => {
+    if (!bearerToken) return;
     try {
       setIsLoading(true);
       const response = await fetch('/api/rsvps', {
@@ -88,23 +110,36 @@ export default function MyRSVPsPage() {
               const isUpcoming = eventDate > new Date();
 
               return (
-                <Card key={rsvp.id} className="hover:shadow-lg transition-shadow">
+                <Card key={rsvp.id} className="hover:shadow-xl transition-all duration-300 overflow-hidden border border-[#E9F1F4] hover:border-[#2E8C96]">
                   {rsvp.event.image && (
-                    <div className="relative w-full h-48 rounded-t-lg overflow-hidden">
+                    <div className="relative w-full h-64 rounded-t-lg overflow-hidden bg-gradient-to-br from-[#2E8C96] to-[#2A7A84]">
                       <Image src={rsvp.event.image} alt={rsvp.event.title} fill className="object-cover" />
                     </div>
                   )}
+                  {!rsvp.event.image && (
+                    <div className="relative w-full h-64 rounded-t-lg overflow-hidden bg-gradient-to-br from-[#2E8C96] to-[#2A7A84] flex items-center justify-center">
+                      <Calendar className="h-16 w-16 text-white/20" />
+                    </div>
+                  )}
                   <CardHeader>
-                    <div className="flex justify-between items-start">
+                    <div className="flex justify-between items-start mb-3">
                       <div className="flex-1">
-                        <CardTitle className="text-xl">{rsvp.event.title}</CardTitle>
-                        <p className="text-sm text-gray-600 mt-1">
-                          RSVP Status: <span className="font-semibold capitalize">{rsvp.status}</span>
-                        </p>
+                        <CardTitle className="text-2xl mb-2">{rsvp.event.title}</CardTitle>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-sm font-semibold px-3 py-1 rounded-full ${
+                            rsvp.status === 'CONFIRMED' 
+                              ? 'text-[#30a46c] bg-[#adddc0]' 
+                              : rsvp.status === 'PENDING'
+                              ? 'text-[#ffd13f] bg-[#ffffc4]'
+                              : 'text-gray-600 bg-gray-100'
+                          }`}>
+                            {rsvp.status === 'CONFIRMED' ? '✓ Confirmed' : rsvp.status === 'PENDING' ? '⏳ Pending' : rsvp.status}
+                          </span>
+                        </div>
                       </div>
                       <div className="text-right">
                         {isUpcoming ? (
-                          <span className="text-xs font-semibold text-green-600 bg-green-50 px-3 py-1 rounded-full">
+                          <span className="text-xs font-semibold text-[#30a46c] bg-[#adddc0] px-3 py-1 rounded-full">
                             Upcoming
                           </span>
                         ) : (
@@ -136,13 +171,18 @@ export default function MyRSVPsPage() {
                       )}
 
                       <div className="flex items-center gap-3 text-gray-600">
-                        <DollarSign className="w-5 h-5" />
                         <div>
                           <p className="text-sm text-gray-500">Price Paid</p>
                           <p className="font-semibold">
-                            {/* Price is stored in USD, convert to KES for display */}
-                            KES {rsvp.buyingRate ? (rsvp.event.price * rsvp.buyingRate).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : rsvp.event.price.toFixed(2)}
-                            {rsvp.buyingRate && <span className="text-sm text-gray-500 ml-2">(≈ {rsvp.event.price.toFixed(2)} USD)</span>}
+                            {/* Price is stored in USD, convert to KES for display using selling_rate */}
+                            {sellingRate ? (
+                              <>
+                                KES {(rsvp.event.price * sellingRate).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                <span className="text-sm text-gray-500 ml-2">(≈ {rsvp.event.price.toFixed(2)} USD)</span>
+                              </>
+                            ) : (
+                              <>{rsvp.event.price.toFixed(2)} USD</>
+                            )}
                           </p>
                         </div>
                       </div>

@@ -32,14 +32,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'File size must be less than 5MB' }, { status: 400 });
     }
 
-    // Check if Cloudinary is configured (for production/Vercel)
+    // Check if we're on Vercel (always use Cloudinary on Vercel)
+    const isVercel = !!process.env.VERCEL;
+    
+    // Check if Cloudinary is configured
     const hasCloudinary = !!(
       process.env.CLOUDINARY_CLOUD_NAME && 
       process.env.CLOUDINARY_API_KEY && 
       process.env.CLOUDINARY_API_SECRET
     );
 
-    if (hasCloudinary) {
+    // On Vercel, we MUST use Cloudinary (filesystem is read-only)
+    if (isVercel && !hasCloudinary) {
+      return NextResponse.json({ 
+        error: 'Cloudinary is not configured. Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET environment variables.',
+      }, { status: 500 });
+    }
+
+    if (hasCloudinary || isVercel) {
       // Use Cloudinary for production
       try {
         const bytes = await file.arrayBuffer();

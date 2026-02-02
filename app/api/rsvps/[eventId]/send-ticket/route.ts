@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserByToken } from '@/app/actions/auth';
-import { sendEmail } from '@/lib/email';
+import { sendEmail, createTicketEmail } from '@/lib/email';
 
 export async function POST(
   request: NextRequest,
@@ -96,58 +96,23 @@ export async function POST(
     });
 
     // Send ticket email
-    const emailBody = `
-Hello ${user.name || user.externalId.split('@')[0]},
-
-Your event ticket for "${rsvp.event.title}" is confirmed!
-
-═══════════════════════════════════════════════════════════════
-
-EVENT DETAILS
-═══════════════════════════════════════════════════════════════
-
-Event Name: ${rsvp.event.title}
-Date: ${formattedDate}
-Time: ${formattedTime}
-Location: ${rsvp.event.location}
-Event Type: ${rsvp.event.isOnline ? 'Online Event' : 'In-Person Event'}
-
-═══════════════════════════════════════════════════════════════
-
-TICKET INFORMATION
-═══════════════════════════════════════════════════════════════
-
-Order ID: ${invoice.orderId || 'N/A'}
-Ticket Status: ✓ Confirmed
-${invoice.receiptNumber ? `M-Pesa Receipt: ${invoice.receiptNumber}` : ''}
-${invoice.transactionCode && !invoice.receiptNumber ? `Transaction Code: ${invoice.transactionCode}` : ''}
-
-═══════════════════════════════════════════════════════════════
-
-IMPORTANT REMINDERS
-═══════════════════════════════════════════════════════════════
-
-• Please arrive on time for the event
-• Bring a valid ID for verification at the venue
-• Keep this email as your ticket confirmation
-• Contact the event organizer if you have any questions
-
-═══════════════════════════════════════════════════════════════
-
-We look forward to seeing you at the event!
-
-Best regards,
-Rift Finance Team
-
----
-This is your official ticket confirmation. Please save this email for your records.
-    `.trim();
+    const emailHtml = createTicketEmail({
+      userName: user.name || user.externalId.split('@')[0],
+      eventTitle: rsvp.event.title,
+      eventDate: formattedDate,
+      eventTime: formattedTime,
+      eventLocation: rsvp.event.location,
+      isOnline: rsvp.event.isOnline,
+      orderId: invoice.orderId || undefined,
+      receiptNumber: invoice.receiptNumber || undefined,
+      transactionCode: invoice.transactionCode || undefined,
+    });
 
     try {
       await sendEmail({
         to: user.email,
         subject: `Your Event Ticket - ${rsvp.event.title}`,
-        text: emailBody,
+        html: emailHtml,
       });
 
       // Mark ticket email as sent

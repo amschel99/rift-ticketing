@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { sendEmail } from '@/lib/email';
+import { sendEmail, createPaymentConfirmationEmail } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
   try {
@@ -83,46 +83,22 @@ export async function POST(request: NextRequest) {
           hour12: true
         });
 
-        const emailBody = `
-Hello ${invoice.user.name || invoice.user.externalId.split('@')[0]},
-
-Thank you for your payment! Your RSVP has been confirmed.
-
-═══════════════════════════════════════════════════════════════
-
-EVENT DETAILS
-═══════════════════════════════════════════════════════════════
-
-Event: ${invoice.event.title}
-Date: ${formattedDate}
-Time: ${formattedTime}
-Location: ${invoice.event.location}
-
-═══════════════════════════════════════════════════════════════
-
-PAYMENT CONFIRMATION
-═══════════════════════════════════════════════════════════════
-
-Order ID: ${invoice.orderId || 'N/A'}
-Payment Status: ✓ Confirmed
-${receipt_number ? `M-Pesa Receipt: ${receipt_number}` : ''}
-${transaction_code && !receipt_number ? `Transaction Code: ${transaction_code}` : ''}
-
-═══════════════════════════════════════════════════════════════
-
-We look forward to seeing you at the event!
-
-Best regards,
-Rift Finance Team
-
----
-This is your payment confirmation. Please save this email for your records.
-          `.trim();
+        const emailHtml = createPaymentConfirmationEmail({
+          userName: invoice.user.name || invoice.user.externalId.split('@')[0],
+          eventTitle: invoice.event.title,
+          eventDate: formattedDate,
+          eventTime: formattedTime,
+          eventLocation: invoice.event.location,
+          isOnline: invoice.event.isOnline,
+          orderId: invoice.orderId || undefined,
+          receiptNumber: receipt_number || undefined,
+          transactionCode: transaction_code || undefined,
+        });
 
         await sendEmail({
           to: invoice.user.email,
           subject: `RSVP Confirmed: ${invoice.event.title}`,
-          text: emailBody,
+          html: emailHtml,
         });
       }
 

@@ -125,6 +125,7 @@ export default function EventDetailsPage() {
     }
   }, [eventId, user, bearerToken]);
 
+
   const fetchExchangeRate = async () => {
     try {
       const response = await fetch('/api/exchange-rate');
@@ -278,7 +279,15 @@ export default function EventDetailsPage() {
   };
 
   const handleDelete = async () => {
-    if (!user || !bearerToken) return;
+    // Get token from localStorage as fallback
+    const token = bearerToken || localStorage.getItem('bearerToken');
+    
+    if (!user || !token) {
+      setError('You must be logged in to delete events');
+      router.push('/auth/login');
+      return;
+    }
+    
     if (!confirm('Are you sure you want to delete this event? This action cannot be undone.')) return;
 
     setIsDeleting(true);
@@ -286,13 +295,22 @@ export default function EventDetailsPage() {
       const response = await fetch(`/api/events/${eventId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${bearerToken}`,
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
       });
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Failed to delete event');
+        if (response.status === 401) {
+          setError('Unauthorized. Please log in again.');
+          localStorage.removeItem('bearerToken');
+          localStorage.removeItem('user');
+          setTimeout(() => router.push('/auth/login'), 2000);
+        } else {
+          throw new Error(data.error || 'Failed to delete event');
+        }
+        return;
       }
 
       router.push('/events');

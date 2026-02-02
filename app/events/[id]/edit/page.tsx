@@ -97,6 +97,15 @@ export default function EditEventPage() {
     e.preventDefault();
     setError('');
 
+    // Get token from localStorage as fallback
+    const token = bearerToken || localStorage.getItem('bearerToken');
+
+    if (!token) {
+      setError('You must be logged in to edit events');
+      router.push('/auth/login');
+      return;
+    }
+
     if (!formData.title || !formData.description || !formData.date || !formData.price || !formData.capacity) {
       setError('Please fill in all required fields');
       return;
@@ -108,14 +117,22 @@ export default function EditEventPage() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${bearerToken}`,
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(formData),
       });
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Failed to update event');
+        if (response.status === 401) {
+          setError('Unauthorized. Please log in again.');
+          localStorage.removeItem('bearerToken');
+          localStorage.removeItem('user');
+          setTimeout(() => router.push('/auth/login'), 2000);
+        } else {
+          throw new Error(data.error || 'Failed to update event');
+        }
+        return;
       }
 
       router.push(`/events/${eventId}`);

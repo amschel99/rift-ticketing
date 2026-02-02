@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ORGANIZER
+}
+
+enum EventType {
+  TECH
+  ENTERTAINMENT
+  LIVE_ONLINE
+  SPORTS
+  ARTS
+  BUSINESS
+  EDUCATION
+  OTHER
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+model User {
+  id            String     @id @default(cuid())
+  externalId    String     @unique
+  email         String?    @unique
+  name          String?
+  password      String?
+  role          UserRole   @default(USER)
+  bearerToken   String?    @unique
+  riftUserId    String?    @unique
+  walletAddress String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  events   Event[]
+  rsvps    RSVP[]
+  invoices Invoice[]
+
+  @@map("users")
+}
+
+model Event {
+  id               String    @id @default(cuid())
+  title            String
+  description      String    @db.Text
+  image            String?
+  category         EventType
+  date             DateTime
+  location         String
+  isOnline         Boolean   @default(false)
+  price            Float
+  capacity         Int
+  organizerId      String
+  shareableUrl     String    @unique @default(uuid())
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  organizer User @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  rsvps     RSVP[]
+  invoices  Invoice[]
+
+  @@map("events")
+}
+
+model RSVP {
+  id        String   @id @default(cuid())
+  userId    String
+  eventId   String
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventId])
+  @@map("rsvps")
+}
+
+model Invoice {
+  id              String   @id @default(cuid())
+  userId          String
+  eventId         String
+  amount          Float
+  currency        String   @default("USDC")
+  chain           String   @default("BASE")
+  invoiceUrl      String?
+  status          String   @default("PENDING")
+  transactionCode String?  @unique
+  receiptNumber   String?
+  orderId         String?  @unique
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@map("invoices")
+}

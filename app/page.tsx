@@ -1,103 +1,242 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { useAuth } from '@/lib/auth-context';
+import { Navigation } from '@/components/navigation';
+import { Footer } from '@/components/footer';
+import { HeroSection } from '@/components/hero-section';
+import { Button } from '@/components/ui/button';
+import { Search, Calendar, Users, Zap } from 'lucide-react';
+import Image from 'next/image';
+
+interface Event {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  price: number; // Price is stored in USD
+  rsvps: { id: string; status: string }[];
+  category: string;
+  image?: string | null;
+}
+
+export default function HomePage() {
+  const { user, bearerToken } = useAuth();
+  const [events, setEvents] = useState<Event[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [buyingRate, setBuyingRate] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetchFeaturedEvents();
+    fetchExchangeRate(); // Fetch exchange rate regardless of auth status
+  }, []);
+
+  const fetchExchangeRate = async () => {
+    try {
+      const response = await fetch('/api/exchange-rate');
+      if (response.ok) {
+        const data = await response.json();
+        setBuyingRate(data.buyingRate || data.rate || null);
+      } else {
+        console.error('Failed to fetch exchange rate');
+        setBuyingRate(null);
+      }
+    } catch (err) {
+      console.error('Error fetching exchange rate:', err);
+      setBuyingRate(null);
+    }
+  };
+
+  const fetchFeaturedEvents = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/events');
+      if (!response.ok) throw new Error('Failed to fetch');
+      const data = await response.json();
+      setEvents(data.slice(0, 6));
+    } catch (error) {
+      console.error('Error fetching events:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <>
+      <Navigation />
+      <main className="min-h-screen bg-[#E9F1F4] flex flex-col">
+      {/* Hero Carousel */}
+      <HeroSection />
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+      {/* Features Section */}
+      <section className="px-4 py-20 sm:px-6 lg:px-8 bg-white">
+        <div className="mx-auto max-w-7xl">
+          <h2 className="text-center text-3xl font-bold mb-12 text-[#1F2D3A]">Why Choose Rift?</h2>
+          <div className="grid gap-8 md:grid-cols-4">
+            <div className="rounded-lg border border-[#E9F1F4] bg-[#F8F9FA] p-6">
+              <Calendar className="h-8 w-8 mb-4 text-[#2E8C96]" />
+              <h3 className="font-semibold mb-2 text-[#1F2D3A]">Easy Booking</h3>
+              <p className="text-sm text-[#4A5568]">
+                Book your favorite events in just a few clicks. Instant confirmation with Rift integration.
+              </p>
+            </div>
+            <div className="rounded-lg border border-[#E9F1F4] bg-[#F8F9FA] p-6">
+              <Users className="h-8 w-8 mb-4 text-[#2E8C96]" />
+              <h3 className="font-semibold mb-2 text-[#1F2D3A]">Share Events</h3>
+              <p className="text-sm text-[#4A5568]">
+                Generate unique shareable links for each event. Invite friends easily.
+              </p>
+            </div>
+            <div className="rounded-lg border border-[#E9F1F4] bg-[#F8F9FA] p-6">
+              <Zap className="h-8 w-8 mb-4 text-[#2E8C96]" />
+              <h3 className="font-semibold mb-2 text-[#1F2D3A]">Crypto Payments</h3>
+              <p className="text-sm text-[#4A5568]">
+                Pay with USD directly. Fast, secure, and decentralized transactions.
+              </p>
+            </div>
+            <div className="rounded-lg border border-[#E9F1F4] bg-[#F8F9FA] p-6">
+              <Search className="h-8 w-8 mb-4 text-[#2E8C96]" />
+              <h3 className="font-semibold mb-2 text-[#1F2D3A]">Smart Search</h3>
+              <p className="text-sm text-[#4A5568]">
+                Filter by category, location, date, and price range. Find exactly what you want.
+              </p>
+            </div>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      </section>
+
+      {/* Featured Events Section */}
+      <section className="px-4 py-20 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="flex items-center justify-between mb-12">
+            <h2 className="text-3xl font-bold text-[#1F2D3A]">Featured Events</h2>
+            <Link href="/events">
+              <Button variant="outline">View All</Button>
+            </Link>
+          </div>
+
+          {isLoading ? (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="rounded-lg border border-gray-200 h-64 bg-slate-100 animate-pulse" />
+              ))}
+            </div>
+          ) : events.length > 0 ? (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {events.map((event) => {
+                const confirmedRsvpsCount = event.rsvps.filter(r => r.status === 'CONFIRMED').length;
+                return (
+                  <Link key={event.id} href={`/events/${event.id}`}>
+                    <div className="group overflow-hidden rounded-lg border border-[#E9F1F4] bg-white transition-all hover:shadow-lg hover:border-[#2E8C96] h-full flex flex-col">
+                      {event.image ? (
+                        <div className="relative h-40 w-full overflow-hidden">
+                          <Image 
+                            src={event.image} 
+                            alt={event.title}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                          <div className="absolute bottom-3 left-3 right-3">
+                            <div className="inline-block rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-[#2E8C96]">
+                              {event.category}
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="relative h-40 w-full overflow-hidden bg-gradient-to-r from-[#2E8C96] to-[#2A7A84]">
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <Calendar className="h-12 w-12 text-white/20" />
+                          </div>
+                          <div className="absolute bottom-3 left-3 right-3">
+                            <div className="inline-block rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-[#2E8C96]">
+                              {event.category}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      <div className="p-4 flex flex-col flex-1">
+                        <h3 className="font-semibold line-clamp-2 group-hover:text-[#2E8C96] transition-colors text-[#1F2D3A]">
+                          {event.title}
+                        </h3>
+                        <p className="mt-2 text-sm text-[#4A5568] line-clamp-2 flex-1">
+                          {event.description}
+                        </p>
+                        <div className="mt-4 flex items-center justify-between pt-4 border-t border-[#E9F1F4]">
+                          {/* Price is stored in USD, convert to KES for display */}
+                          <div className="text-lg font-semibold text-[#2E8C96]">
+                            {buyingRate ? (
+                              <>
+                                KES {(event.price * buyingRate).toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                <span className="text-sm text-gray-500 ml-1">(≈ {event.price.toFixed(2)} USD)</span>
+                              </>
+                            ) : (
+                              <span>{event.price.toFixed(2)} USD</span>
+                            )}
+                          </div>
+                          <div className="text-xs text-[#4A5568]">{confirmedRsvpsCount} attendees</div>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-500">No events available yet</p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="relative px-4 py-20 sm:px-6 lg:px-8 overflow-hidden bg-gradient-to-br from-[#2E8C96] via-[#2A7A84] to-[#2E8C96]">
+        <div className="container mx-auto max-w-6xl">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+            {/* Left Side - Illustration */}
+            <div className="relative h-[250px] sm:h-[300px] lg:h-[400px] order-2 lg:order-1">
+              <div className="relative w-full h-full">
+                <Image
+                  src="/event1.jpeg"
+                  alt="Get started illustration"
+                  fill
+                  className="object-contain"
+                />
+              </div>
+            </div>
+
+            {/* Right Side - Content */}
+            <div className="text-center lg:text-left text-white space-y-6 order-1 lg:order-2">
+              <div className="inline-block">
+                <span className="text-sm font-semibold bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full">
+                  🎯 Ready to Get Started?
+                </span>
+              </div>
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold">
+                Join the Rift Community
+              </h2>
+              <p className="text-lg sm:text-xl opacity-90 max-w-xl mx-auto lg:mx-0">
+                Browse amazing events or create your own. Join Rift to discover and organize unforgettable experiences.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4">
+                <Link href="/events">
+                  <Button size="lg" className="w-full sm:w-auto bg-white text-[#2E8C96] hover:bg-[#F8F9FA] shadow-lg hover:shadow-xl transition-all">
+                    🎫 Browse Events
+                  </Button>
+                </Link>
+                <Link href={user ? '/events/create' : '/auth/signup'}>
+                  <Button size="lg" variant="outline" className="w-full sm:w-auto bg-white/10 text-white border-2 border-white/30 hover:bg-white/20 backdrop-blur-sm">
+                    {user ? '✨ Create Event' : '🚀 Become an Organizer'}
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <Footer />
+    </main>
+    </>
   );
 }

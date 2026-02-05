@@ -9,7 +9,6 @@ import { HeroSection } from '@/components/hero-section';
 import { EventShowcase } from '@/components/event-showcase';
 import { StatsSection } from '@/components/stats-section';
 import { Button } from '@/components/ui/button';
-import { Zap, Heart, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface Event {
@@ -71,11 +70,12 @@ export default function HomePage() {
       {/* Hero Carousel */}
       <HeroSection />
 
-      {/* Features Section - Premium redesign */}
-      <section className="w-full px-4 py-24 sm:px-6 lg:px-8 bg-white relative overflow-hidden">
+      {/* Gamified Quests Section */}
+      <section className="w-full px-4 py-24 sm:px-6 lg:px-8 bg-gradient-to-br from-white via-[#F8FAFB] to-[#E9F1F4] relative overflow-hidden">
+        {/* Ambient glow effects */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-32 right-1/4 w-64 h-64 bg-[#2E8C96]/5 rounded-full blur-3xl" />
-          <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-[#2E8C96]/3 rounded-full blur-3xl" />
+          <div className="absolute top-1/4 right-0 w-96 h-96 bg-[#2E8C96]/8 rounded-full blur-3xl -mr-48" />
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-[#2A7A84]/5 rounded-full blur-3xl -ml-48" />
         </div>
 
         <div className="container mx-auto max-w-7xl relative z-10">
@@ -84,44 +84,103 @@ export default function HomePage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
-            className="mb-16 text-center max-w-2xl mx-auto"
+            className="mb-20 text-center max-w-3xl mx-auto"
           >
-            <span className="text-xs font-bold tracking-widest text-[#2E8C96] uppercase">Why Rift</span>
-            <h2 className="text-4xl lg:text-5xl font-bold text-[#1F2D3A] mt-3">
-              Built for Unforgettable Moments
+            <span className="inline-block px-4 py-2 mb-4 text-xs font-bold tracking-widest text-[#2E8C96] bg-[#2E8C96]/10 rounded-full border border-[#2E8C96]/20">
+              COMPLETE YOUR JOURNEY
+            </span>
+            <h2 className="text-5xl lg:text-6xl font-bold text-[#1F2D3A] leading-tight">
+              Event Master Quests
             </h2>
+            <p className="mt-6 text-xl text-[#4A5568]">Level up your event experience with exclusive rewards and achievements</p>
           </motion.div>
 
+          {/* Quest Cards Grid */}
           <motion.div
-            className="grid gap-8 md:grid-cols-3"
+            className="grid gap-6 md:grid-cols-3 auto-rows-fr"
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
-            transition={{ staggerChildren: 0.1 }}
+            transition={{ staggerChildren: 0.12 }}
           >
             {[
-              { icon: Heart, title: 'Curated Experiences', desc: 'Handpicked events that match your interests and create lasting memories.' },
-              { icon: Zap, title: 'Instant Access', desc: 'Get your tickets instantly with secure, blockchain-verified transactions.' },
-              { icon: Lock, title: 'Safe & Secure', desc: 'Your data and payments are protected with military-grade encryption.' },
-            ].map((feature, i) => {
-              const Icon = feature.icon;
-              return (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                >
-                  <div className="group relative p-8 rounded-2xl bg-gradient-to-br from-white to-[#F8FAFB] border border-[#E9F1F4] transition-all hover:shadow-lg hover:border-[#2E8C96]">
-                    <div className="absolute top-0 right-0 -mr-8 -mt-8 w-24 h-24 bg-[#2E8C96]/5 rounded-full blur-2xl group-hover:bg-[#2E8C96]/10 transition-colors" />
-                    <Icon className="w-8 h-8 text-[#2E8C96] mb-4 relative" />
-                    <h3 className="text-lg font-bold text-[#1F2D3A] mb-2 relative">{feature.title}</h3>
-                    <p className="text-sm text-[#4A5568] relative">{feature.desc}</p>
+              {
+                level: 'I',
+                title: 'Discovery',
+                desc: 'Explore your first event and discover what awaits',
+                reward: '+100 XP',
+                badge: '🎯',
+                color: 'from-blue-400 to-[#2E8C96]'
+              },
+              {
+                level: 'II',
+                title: 'Collector',
+                desc: 'Book 5 events in a single month',
+                reward: '+500 XP',
+                badge: '🏆',
+                color: 'from-purple-400 to-[#2A7A84]'
+              },
+              {
+                level: 'III',
+                title: 'Creator',
+                desc: 'Host your first event and invite friends',
+                reward: '+1000 XP',
+                badge: '👑',
+                color: 'from-yellow-400 to-orange-400'
+              },
+            ].map((quest, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="group"
+              >
+                <div className={`relative h-full rounded-2xl bg-gradient-to-br ${quest.color} p-[2px] overflow-hidden cursor-pointer transform transition-all duration-300 hover:scale-105 hover:shadow-2xl`}>
+                  {/* Animated border glow */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-20 animate-pulse" />
+                  
+                  <div className="relative h-full rounded-2xl bg-white p-8 flex flex-col">
+                    {/* Quest Level Badge */}
+                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-[#2E8C96] to-[#2A7A84] text-white font-bold text-lg mb-6 shadow-lg">
+                      {quest.level}
+                    </div>
+
+                    {/* Emoji Badge */}
+                    <div className="text-5xl mb-4 inline-block transform group-hover:scale-125 transition-transform duration-300">
+                      {quest.badge}
+                    </div>
+
+                    {/* Content */}
+                    <h3 className="text-2xl font-bold text-[#1F2D3A] mb-3">{quest.title}</h3>
+                    <p className="text-[#4A5568] mb-6 flex-grow">{quest.desc}</p>
+
+                    {/* Reward Badge */}
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#2E8C96]/10 rounded-full border border-[#2E8C96]/30 w-fit mb-6">
+                      <span className="text-sm font-bold text-[#2E8C96]">{quest.reward}</span>
+                    </div>
+
+                    {/* Unlock Progress */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-xs text-[#4A5568]">
+                        <span>Progress</span>
+                        <span className="font-bold">{Math.floor(Math.random() * 100)}%</span>
+                      </div>
+                      <div className="w-full h-2 bg-[#E9F1F4] rounded-full overflow-hidden">
+                        <motion.div
+                          className="h-full bg-gradient-to-r from-[#2E8C96] to-[#2A7A84]"
+                          initial={{ width: 0 }}
+                          whileInView={{ width: `${Math.floor(Math.random() * 100) + 20}%` }}
+                          viewport={{ once: true }}
+                          transition={{ duration: 1.5 }}
+                        />
+                      </div>
+                    </div>
                   </div>
-                </motion.div>
-              );
-            })}
+                </div>
+              </motion.div>
+            ))}
           </motion.div>
         </div>
       </section>

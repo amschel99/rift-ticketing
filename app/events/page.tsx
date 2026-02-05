@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Calendar, MapPin, Users, Search, Share2 } from 'lucide-react';
 import Image from 'next/image';
+import { EmptyEventsIllustration } from '@/components/illustrations';
 
 interface Event {
   id: string;
@@ -194,8 +195,21 @@ export default function EventsPage() {
             <p className="text-gray-500">Loading events...</p>
           </div>
         ) : filteredEvents.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-500">No events found</p>
+          <div className="text-center py-12 space-y-6">
+            <div className="max-w-md mx-auto h-64 flex items-center justify-center">
+              <EmptyEventsIllustration />
+            </div>
+            <div>
+              <p className="text-lg font-semibold text-[#1F2D3A] mb-2">No events found</p>
+              <p className="text-sm text-[#4A5568] mb-4">Try adjusting your search or filters</p>
+              {user && (
+                <Link href="/events/create">
+                  <Button className="bg-[#2E8C96] hover:bg-[#2A7A84] text-white">
+                    Create Your First Event
+                  </Button>
+                </Link>
+              )}
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -207,7 +221,10 @@ export default function EventsPage() {
               const eventPriceInKES = sellingRate ? (event.price * sellingRate) : null;
 
               return (
-                <Card key={event.id} className="hover:shadow-xl transition-all duration-300 overflow-hidden border border-[#E9F1F4] hover:border-[#2E8C96] group p-0">
+                <Card
+                  key={event.id}
+                  className="flex h-full flex-col hover:shadow-xl transition-all duration-300 overflow-hidden border border-[#E9F1F4] hover:border-[#2E8C96] group p-0"
+                >
                   {event.image && (
                     <div className="relative w-full h-56 overflow-hidden bg-gradient-to-br from-[#2E8C96] to-[#2A7A84]">
                       <Image 
@@ -251,7 +268,7 @@ export default function EventsPage() {
                       {event.description}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4 pt-0 px-6 pb-6">
+                  <CardContent className="flex flex-1 flex-col justify-between space-y-4 pt-0 px-6 pb-6">
                     <div className="space-y-2.5 text-sm">
                       <div className="flex items-center gap-2 text-gray-700">
                         <Calendar className="w-4 h-4 text-[#2E8C96]" />

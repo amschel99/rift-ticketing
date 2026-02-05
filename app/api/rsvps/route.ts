@@ -55,6 +55,7 @@ export async function GET(request: NextRequest) {
         receiptNumber: true,
         transactionCode: true,
         ticketEmailSent: true,
+        orderId: true,
       },
     });
 
@@ -89,6 +90,7 @@ export async function GET(request: NextRequest) {
         receiptNumber: invoice?.receiptNumber || null, // M-Pesa receipt
         transactionCode: invoice?.transactionCode || null, // Transaction hash/URL
         ticketEmailSent: invoice?.ticketEmailSent || false, // Track if ticket email was sent
+        orderId: invoice?.orderId || null, // Order ID
         buyingRate, // Include exchange rate for frontend
       };
     });

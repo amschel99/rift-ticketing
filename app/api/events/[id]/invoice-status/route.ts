@@ -37,6 +37,7 @@ export async function GET(
         invoiceUrl: true,
         createdAt: true,
         ticketEmailSent: true,
+        orderId: true,
       },
     });
 
@@ -78,6 +79,7 @@ export async function GET(
       transactionCode: invoice.transactionCode,
       invoiceUrl: invoice.invoiceUrl,
       ticketEmailSent: invoice.ticketEmailSent || false,
+      orderId: invoice.orderId,
     });
   } catch (error: any) {
     console.error('Invoice status error:', error);

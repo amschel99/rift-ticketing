@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getUserByToken } from '@/app/actions/auth';
 import rift from '@/lib/rift';
 import { sendEmail, createPaymentConfirmationEmail } from '@/lib/email';
+import { validateOnchainUsdcPayment } from '@/lib/onchain-validation';
 
 export async function POST(
   request: NextRequest,
@@ -57,13 +58,14 @@ export async function POST(
       return NextResponse.json({ error: 'Order ID does not match this event' }, { status: 400 });
     }
 
-    // Get event organizer's bearer token for Rift SDK queries
+    // Get event organizer's bearer token for Rift SDK queries and wallet address for on-chain validation
     const event = await prisma.event.findUnique({
       where: { id: eventId },
       include: {
         organizer: {
           select: {
             bearerToken: true,
+            walletAddress: true,
           },
         },
       },
@@ -71,6 +73,14 @@ export async function POST(
 
     if (!event?.organizer.bearerToken) {
       return NextResponse.json({ error: 'Event organizer not authenticated with Rift' }, { status: 500 });
+    }
+
+    if (!event.organizer.walletAddress) {
+      console.error('Organizer walletAddress missing for event', {
+        eventId,
+        organizerId: invoice.userId,
+      });
+      return NextResponse.json({ error: 'Event organizer wallet address not configured' }, { status: 500 });
     }
 
     // Check if invoice is older than 1 minute - if so and no receipt, mark as failed
@@ -196,63 +206,65 @@ export async function POST(
       }
     }
 
-    // Handle on-chain payment (hash) - Poll with increasing intervals
+    // Handle on-chain payment (hash) using direct chain validation (no Rift deposits check)
     if (hash) {
-      try {
-        // Poll intervals: 2s, 5s, 15s, 30s (exponential backoff)
-        const pollIntervals = [2000, 5000, 15000, 30000]; // in milliseconds
-        let attempts = 0;
-        let matchingDeposit: any = null;
+      // If this hash has already been processed successfully for this invoice, skip re-validation
+      if (invoice.transactionCode === hash && invoice.status === 'CONFIRMED') {
+        isSuccess = true;
+        receiptNumber = invoice.receiptNumber || hash;
+        paymentStatus = 'confirmed';
+      } else {
+        try {
+          console.log('Validating on-chain transaction', {
+            eventId,
+            invoiceId: invoice.id,
+            hash,
+            expectedAmount: invoice.amount,
+            chain: invoice.chain,
+            currency: invoice.currency,
+            organizerWallet: event.organizer.walletAddress,
+          });
 
-        while (attempts < pollIntervals.length) {
-          // Get all deposits and find the one matching the hash
-          const depositsResponse = await rift.deposits.getAllDeposits();
-          const deposits = depositsResponse.deposits || [];
-          
-          // Find deposit with matching transaction hash
-          matchingDeposit = deposits.find(
-            (deposit: any) => deposit.transactionHash?.toLowerCase() === hash.toLowerCase()
-          );
+          const validation = await validateOnchainUsdcPayment({
+            hash,
+            expectedAmount: invoice.amount,
+            chain: invoice.chain || 'BASE',
+            asset: invoice.currency || 'USDC',
+            recipientAddress: event.organizer.walletAddress,
+          });
 
-          if (matchingDeposit) {
-            // Verify amount matches (convert invoice amount to string for comparison)
-            const invoiceAmount = invoice.amount.toString();
-            const depositAmount = matchingDeposit.amount;
-            
-            // Check if amounts match (with some tolerance for decimals)
-            const amountMatches = Math.abs(parseFloat(invoiceAmount) - parseFloat(depositAmount)) < 0.01;
-
-            if (!amountMatches) {
+          if (!validation.isValid) {
+            // If hash is mined but amount doesn't match, treat as failure
+            if (validation.minedAt) {
+              await prisma.invoice.update({
+                where: { id: invoice.id },
+                data: {
+                  status: 'FAILED',
+                },
+              });
               return NextResponse.json({
-                error: `Amount mismatch. Expected ${invoiceAmount} USDC, but deposit was ${depositAmount} USDC`,
+                success: false,
+                error: validation.message || 'On-chain payment validation failed',
+                status: 'failed',
               }, { status: 400 });
             }
 
-            // Check if deposit is processed
-            if (matchingDeposit.processed) {
-              // All checks passed - payment is successful
-              isSuccess = true;
-              receiptNumber = matchingDeposit.transactionHash; // Use hash as receipt number
-              paymentStatus = 'confirmed';
-              break; // Deposit found and processed, exit polling loop
-            }
-            // Deposit found but not processed yet, continue polling
+            // If not mined yet, treat as pending
+            return NextResponse.json({
+              success: true,
+              message: validation.message || 'Hash saved. Transaction is still pending confirmation.',
+              status: 'pending',
+            });
           }
 
-          // Deposit not found or not processed yet, wait with increasing interval before next poll
-          if (attempts < pollIntervals.length - 1) {
-            const waitTime = pollIntervals[attempts];
-            console.log(`Waiting ${waitTime}ms before next poll...`);
-            await new Promise(resolve => setTimeout(resolve, waitTime));
-          }
-          attempts++;
-        }
+          // Validation passed
+          isSuccess = true;
+          receiptNumber = validation.transactionHash;
+          paymentStatus = 'confirmed';
+        } catch (error: any) {
+          console.error('Error validating on-chain transaction:', error);
 
-        // If we exhausted attempts without finding processed deposit
-        if (!isSuccess) {
-          // Check if invoice is expired (2+ minutes old)
           if (isInvoiceExpired) {
-            // Invoice is 2+ minutes old with no matching deposit - mark as failed
             await prisma.invoice.update({
               where: { id: invoice.id },
               data: {
@@ -261,48 +273,18 @@ export async function POST(
             });
             return NextResponse.json({
               success: false,
-              error: 'Payment was not successful. No matching deposit found within 1 minute. Please try again.',
+              error: 'Payment was not successful. Unable to validate on-chain payment. Please try again.',
               status: 'failed',
             }, { status: 400 });
           }
-          
-          if (matchingDeposit && !matchingDeposit.processed) {
-            return NextResponse.json({
-              success: false,
-              message: 'Deposit found but not yet processed. Please wait.',
-              status: 'pending',
-            });
-          } else {
-            return NextResponse.json({
-              success: false,
-              message: 'Deposit not found. Payment may still be processing.',
-              status: 'pending',
-            });
-          }
-        }
-      } catch (riftError: any) {
-        console.error('Error querying Rift SDK for on-chain deposit:', riftError);
-        // Hash already saved, but can't verify deposit
-        // If invoice is expired, mark as failed
-        if (isInvoiceExpired) {
-          await prisma.invoice.update({
-            where: { id: invoice.id },
-            data: {
-              status: 'FAILED',
-            },
+
+          return NextResponse.json({
+            success: true,
+            message: 'Hash saved. Unable to validate transaction at this time.',
+            warning: error.message,
+            status: 'pending',
           });
-            return NextResponse.json({
-              success: false,
-              error: 'Payment was not successful. Unable to verify deposit. Please try again.',
-              status: 'failed',
-            }, { status: 400 });
         }
-        return NextResponse.json({
-          success: true,
-          message: 'Hash saved. Unable to verify deposit at this time.',
-          warning: riftError.message,
-          status: 'pending',
-        });
       }
     }
 

@@ -16,7 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Calendar, MapPin, Users, Share2, Edit, Trash2, BarChart3, Mail } from 'lucide-react';
+import { Calendar, MapPin, Users, Share2, Edit, Trash2, BarChart3, Mail, ReceiptText, ExternalLink } from 'lucide-react';
 import { generateGoogleCalendarUrl } from '@/lib/calendar';
 
 interface Event {
@@ -57,6 +57,8 @@ export default function EventDetailsPage() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [ticketEmailSent, setTicketEmailSent] = useState(false);
   const [sendingTicket, setSendingTicket] = useState(false);
+  const [orderId, setOrderId] = useState<string | null>(null);
+  const [confirmationCode, setConfirmationCode] = useState<string | null>(null);
 
   // Check for payment redirect query parameters
   useEffect(() => {
@@ -258,6 +260,14 @@ export default function EventDetailsPage() {
                 // Check if ticket email was sent
                 if (invoiceData.ticketEmailSent) {
                   setTicketEmailSent(true);
+                }
+                
+                // Set order ID and confirmation code
+                if (invoiceData.orderId) {
+                  setOrderId(invoiceData.orderId);
+                }
+                if (invoiceData.receiptNumber || invoiceData.transactionCode) {
+                  setConfirmationCode(invoiceData.receiptNumber || invoiceData.transactionCode);
                 }
                 
                 // Determine payment status
@@ -677,6 +687,39 @@ export default function EventDetailsPage() {
                               Please check your inbox and spam folder for your receipt and event details.
                             </AlertDescription>
                           </Alert>
+                        )}
+                        {(orderId || confirmationCode) && (
+                          <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+                            {orderId && (
+                              <div>
+                                <p className="text-sm text-gray-600 mb-1">Order ID:</p>
+                                <p className="font-mono text-sm font-semibold">{orderId}</p>
+                              </div>
+                            )}
+                            {confirmationCode && (
+                              <div>
+                                <p className="text-sm text-gray-600 mb-1 flex items-center gap-2">
+                                  <ReceiptText className="w-4 h-4" />
+                                  Confirmation code:
+                                </p>
+                                {confirmationCode.startsWith('http') || confirmationCode.startsWith('https') ? (
+                                  <a
+                                    href={confirmationCode}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="font-mono text-sm font-semibold break-all text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-2"
+                                  >
+                                    {confirmationCode}
+                                    <ExternalLink className="w-4 h-4" />
+                                  </a>
+                                ) : (
+                                  <p className="font-mono text-sm font-semibold break-all">
+                                    {confirmationCode.replace(/^#/, '')}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         )}
                         {event && (
                           <div className="space-y-2">

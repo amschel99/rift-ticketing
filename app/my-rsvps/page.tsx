@@ -27,6 +27,7 @@ interface RSVP {
   receiptNumber?: string | null; // M-Pesa receipt
   transactionCode?: string | null; // Transaction hash/URL
   ticketEmailSent?: boolean; // Track if ticket email was sent
+  orderId?: string | null; // Order ID
 }
 
 export default function MyRSVPsPage() {
@@ -148,7 +149,7 @@ export default function MyRSVPsPage() {
               return (
                 <Card key={rsvp.id} className="hover:shadow-xl transition-all duration-300 overflow-hidden border border-[#E9F1F4] hover:border-[#2E8C96]">
                   {rsvp.event.image && (
-                    <div className="relative w-full h-64 rounded-t-lg overflow-hidden bg-gradient-to-br from-[#2E8C96] to-[#2A7A84]">
+                    <div className="relative w-full h-72 overflow-hidden bg-gradient-to-br from-[#2E8C96] to-[#2A7A84]">
                       <Image src={rsvp.event.image} alt={rsvp.event.title} fill className="object-cover" />
                     </div>
                   )}
@@ -224,44 +225,45 @@ export default function MyRSVPsPage() {
                       </div>
                     </div>
 
-                    {(rsvp.receiptNumber || rsvp.transactionCode) && rsvp.status === 'CONFIRMED' && (
+                    {rsvp.status === 'CONFIRMED' && (rsvp.orderId || rsvp.receiptNumber || rsvp.transactionCode) && (
                       <div className="bg-gray-50 p-3 rounded-lg space-y-3">
-                        {rsvp.receiptNumber && (
+                        {rsvp.orderId && (
+                          <div>
+                            <p className="text-sm text-gray-600 mb-1">Order ID:</p>
+                            <p className="font-mono text-sm font-semibold">{rsvp.orderId}</p>
+                          </div>
+                        )}
+                        {(rsvp.receiptNumber || rsvp.transactionCode) && (
                           <div>
                             <p className="text-sm text-gray-600 mb-1 flex items-center gap-2">
                               <ReceiptText className="w-4 h-4" />
-                              M-Pesa Receipt:
+                              Confirmation code:
                             </p>
-                            <p className="font-mono text-sm font-semibold break-all">
-                              {rsvp.receiptNumber}
-                            </p>
-                          </div>
-                        )}
-                        {rsvp.transactionCode && (
-                          <div>
-                            <p className="text-sm text-gray-600 mb-1 flex items-center gap-2">
-                              <Hash className="w-4 h-4" />
-                              Transaction Code:
-                            </p>
-                            {rsvp.transactionCode.startsWith('http') || rsvp.transactionCode.startsWith('https') ? (
-                              <a
-                                href={rsvp.transactionCode}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="font-mono text-sm font-semibold break-all text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-2"
-                              >
-                                {rsvp.transactionCode}
-                                <ExternalLink className="w-4 h-4" />
-                              </a>
-                            ) : (
+                            {rsvp.receiptNumber ? (
                               <p className="font-mono text-sm font-semibold break-all">
-                                {rsvp.transactionCode.replace(/^#/, '')}
+                                {rsvp.receiptNumber}
                               </p>
-                            )}
+                            ) : rsvp.transactionCode ? (
+                              rsvp.transactionCode.startsWith('http') || rsvp.transactionCode.startsWith('https') ? (
+                                <a
+                                  href={rsvp.transactionCode}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="font-mono text-sm font-semibold break-all text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-2"
+                                >
+                                  {rsvp.transactionCode}
+                                  <ExternalLink className="w-4 h-4" />
+                                </a>
+                              ) : (
+                                <p className="font-mono text-sm font-semibold break-all">
+                                  {rsvp.transactionCode.replace(/^#/, '')}
+                                </p>
+                              )
+                            ) : null}
                           </div>
                         )}
                       </div>
-                    )}
+                    )} 
 
                     <div className="flex gap-2 pt-4 border-t border-gray-200">
                       <Button

@@ -32,145 +32,170 @@ export function HeroSection() {
   };
 
   return (
-    <section className="relative w-full overflow-hidden bg-gradient-to-br from-[#E9F1F4] via-white to-[#F8F9FA] min-h-[600px] flex items-center">
-      {/* Decorative background blobs */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-[#2E8C96] opacity-5 rounded-full blur-3xl" />
-        <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-[#2E8C96] opacity-3 rounded-full blur-3xl" />
+    <section className="relative w-full overflow-hidden bg-white min-h-screen flex items-center pt-20">
+      {/* Left Side - Full height solid color with content */}
+      <div className="hidden lg:flex absolute left-0 top-0 w-1/2 h-full bg-gradient-to-br from-[#E9F1F4] to-[#F0F4F7] flex-col items-center justify-center p-8 z-10">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8 }}
+          className="w-full max-w-md text-center lg:text-left"
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.1 }}
+            className="mb-8"
+          >
+            <span className="text-xs font-bold tracking-widest text-[#2E8C96] uppercase mb-4 inline-block">
+              Next Generation Events
+            </span>
+            <h1 className="text-6xl lg:text-7xl font-bold text-[#1F2D3A] leading-tight">
+              Rift
+            </h1>
+          </motion.div>
+
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="text-lg text-[#4A5568] mb-12 leading-relaxed"
+          >
+            Experience the future of event discovery and ticketing. Seamless, secure, and unforgettable.
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
+            className="flex gap-4 flex-col sm:flex-row"
+          >
+            <Link href="/events" className="flex-1 sm:flex-none">
+              <Button
+                size="lg"
+                className="w-full bg-[#2E8C96] hover:bg-[#2A7A84] text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all"
+              >
+                Browse Events
+              </Button>
+            </Link>
+            <Link href={user ? '/events/create' : '/auth/signup'} className="flex-1 sm:flex-none">
+              <Button
+                size="lg"
+                variant="outline"
+                className="w-full border-2 border-[#2E8C96] text-[#2E8C96] hover:bg-[#2E8C96]/5 font-semibold rounded-lg transition-all"
+              >
+                {user ? 'Create Event' : 'Explore'}
+              </Button>
+            </Link>
+          </motion.div>
+        </motion.div>
       </div>
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 lg:py-32 relative z-10">
+      {/* Right Side - 3D Illustration with gradient */}
+      <div className="w-full lg:w-1/2 lg:ml-auto h-screen lg:h-auto lg:min-h-screen flex items-center justify-center relative bg-gradient-to-br from-white via-[#F8FAFB] to-[#E9F1F4]">
         <motion.div
-          className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center"
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1 }}
+          className="relative w-full h-full flex items-center justify-center"
         >
-          {/* Left Side - Content */}
-          <div className="text-center lg:text-left space-y-6">
-            <motion.div variants={itemVariants} className="inline-block">
-              <span className="text-sm font-semibold text-[#2E8C96] bg-blue-100/50 border border-[#2E8C96]/30 px-4 py-2 rounded-full">
-                Discover Amazing Events
-              </span>
-            </motion.div>
-
-            <motion.h1
-              variants={itemVariants}
-              className="text-5xl sm:text-6xl lg:text-7xl font-bold text-[#1F2D3A] leading-tight"
-            >
-              Your Gateway to
-              <span className="block text-[#2E8C96]">Unforgettable Experiences</span>
-            </motion.h1>
-
-            <motion.p
-              variants={itemVariants}
-              className="text-lg sm:text-xl text-[#4A5568] max-w-xl mx-auto lg:mx-0"
-            >
-              Find, book, and experience the best events. From tech conferences to concerts, workshops to festivals - all in one place.
-            </motion.p>
-
-            <motion.div
-              variants={itemVariants}
-              className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4"
-            >
-              <Link href="/events">
-                <Button
-                  size="lg"
-                  className="w-full sm:w-auto bg-[#2E8C96] hover:bg-[#2A7A84] text-white shadow-lg hover:shadow-xl transition-all"
-                >
-                  Browse Events
-                </Button>
-              </Link>
-              <Link href={user ? '/events/create' : '/auth/signup'}>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="w-full sm:w-auto border-2 border-[#2E8C96] text-[#2E8C96] hover:bg-[#2E8C96] hover:text-white transition-all"
-                >
-                  {user ? 'Create Event' : 'Get Started'}
-                </Button>
-              </Link>
-            </motion.div>
-          </div>
-
-          {/* Right Side - 3D Illustration */}
+          {/* Large 3D sphere/bubble */}
           <motion.div
-            variants={itemVariants}
-            className="relative h-[300px] sm:h-[400px] lg:h-[500px] flex items-center justify-center"
+            animate={{
+              rotateX: [0, 20, 0],
+              rotateY: [0, 20, 0],
+              y: [0, -30, 0],
+            }}
+            transition={{
+              duration: 8,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+            className="relative"
+            style={{
+              transformStyle: 'preserve-3d',
+            }}
           >
-            <div className="relative w-full h-full flex items-center justify-center">
-              {/* 3D rotating ticket box */}
+            <div className="relative w-64 h-64 lg:w-96 lg:h-96">
+              {/* Gradient bubble - 3D effect */}
+              <div className="absolute inset-0 bg-gradient-to-br from-[#2E8C96] to-[#2A7A84] rounded-full shadow-2xl flex items-center justify-center overflow-hidden">
+                <div className="absolute inset-0 bg-white/20 rounded-full" />
+                <div className="absolute inset-4 bg-gradient-to-t from-transparent to-white/10 rounded-full" />
+                
+                {/* Center 3D icon */}
+                <motion.div
+                  animate={{ scale: [0.9, 1.1, 0.9] }}
+                  transition={{ duration: 4, repeat: Infinity }}
+                  className="text-8xl lg:text-9xl z-10"
+                >
+                  🎭
+                </motion.div>
+              </div>
+
+              {/* Orbiting rings */}
               <motion.div
-                className="relative w-48 h-48 sm:w-64 sm:h-64"
-                animate={{
-                  rotateX: [0, 10, 0],
-                  rotateY: [0, 10, 0],
-                }}
-                transition={{
-                  duration: 6,
-                  repeat: Infinity,
-                  ease: 'easeInOut',
-                }}
-                style={{
-                  transformStyle: 'preserve-3d',
-                  perspective: '1000px',
-                }}
+                animate={{ rotate: 360 }}
+                transition={{ duration: 12, repeat: Infinity, ease: 'linear' }}
+                className="absolute inset-0"
               >
-                {/* Main ticket gradient box */}
-                <div className="absolute inset-0 bg-gradient-to-br from-[#2E8C96] to-[#2A7A84] rounded-2xl shadow-2xl flex items-center justify-center overflow-hidden">
-                  <div className="absolute inset-0 bg-white opacity-10" />
-                  <div className="relative text-6xl sm:text-8xl">🎫</div>
-                </div>
-
-                {/* Orbiting dot 1 */}
-                <motion.div
-                  className="absolute inset-0"
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
-                >
-                  <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-[#2E8C96] rounded-full shadow-lg" />
-                </motion.div>
-
-                {/* Orbiting dot 2 */}
-                <motion.div
-                  className="absolute inset-0"
-                  animate={{ rotate: -360 }}
-                  transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
-                >
-                  <div className="absolute bottom-1/4 -right-8 w-3 h-3 bg-[#2E8C96]/60 rounded-full shadow-lg" />
-                </motion.div>
+                <div className="absolute inset-0 border-2 border-transparent border-t-[#2E8C96] border-r-[#2E8C96] rounded-full opacity-30" />
               </motion.div>
 
-              {/* Floating accent card top-right */}
               <motion.div
-                className="absolute -top-12 -right-12 w-20 h-24 bg-gradient-to-br from-[#2E8C96]/20 to-[#2A7A84]/10 rounded-lg"
-                animate={{
-                  y: [0, -15, 0],
-                  rotate: [0, 5, 0],
-                }}
-                transition={{
-                  duration: 5,
-                  repeat: Infinity,
-                  ease: 'easeInOut',
-                }}
-              />
+                animate={{ rotate: -360 }}
+                transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
+                className="absolute -inset-12"
+              >
+                <div className="absolute inset-0 border border-dashed border-[#2E8C96]/20 rounded-full" />
+              </motion.div>
 
-              {/* Floating accent card bottom-left */}
+              {/* Floating accent elements */}
               <motion.div
-                className="absolute -bottom-16 -left-12 w-24 h-16 bg-gradient-to-br from-[#2E8C96]/15 to-[#2A7A84]/5 rounded-lg"
                 animate={{
-                  y: [0, 20, 0],
-                  rotate: [0, -5, 0],
+                  y: [0, -25, 0],
+                  x: [0, 15, 0],
                 }}
                 transition={{
                   duration: 6,
                   repeat: Infinity,
                   ease: 'easeInOut',
-                  delay: 0.5,
                 }}
+                className="absolute -top-12 -right-8 w-16 h-20 bg-gradient-to-br from-[#2E8C96]/30 to-[#2A7A84]/10 rounded-2xl shadow-xl"
+              />
+
+              <motion.div
+                animate={{
+                  y: [0, 25, 0],
+                  x: [0, -15, 0],
+                }}
+                transition={{
+                  duration: 7,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                  delay: 1,
+                }}
+                className="absolute -bottom-16 -left-12 w-20 h-16 bg-gradient-to-br from-[#2E8C96]/20 to-transparent rounded-2xl shadow-lg"
               />
             </div>
           </motion.div>
+
+          {/* Mobile CTA - Show on mobile only */}
+          <div className="absolute bottom-8 left-0 right-0 lg:hidden px-4 text-center space-y-4">
+            <h2 className="text-3xl font-bold text-[#1F2D3A]">Rift Events</h2>
+            <p className="text-[#4A5568]">Experience the future of event ticketing</p>
+            <div className="flex gap-3 flex-col">
+              <Link href="/events" className="w-full">
+                <Button size="lg" className="w-full bg-[#2E8C96] hover:bg-[#2A7A84] text-white">
+                  Browse Events
+                </Button>
+              </Link>
+              <Link href={user ? '/events/create' : '/auth/signup'} className="w-full">
+                <Button size="lg" variant="outline" className="w-full border-2 border-[#2E8C96] text-[#2E8C96]">
+                  {user ? 'Create Event' : 'Get Started'}
+                </Button>
+              </Link>
+            </div>
+          </div>
         </motion.div>
       </div>
     </section>

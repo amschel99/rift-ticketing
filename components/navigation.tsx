@@ -23,15 +23,11 @@ export function Navigation() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-14 sm:h-16 items-center justify-between">
           <div className="flex items-center gap-3 sm:gap-6 md:gap-8">
-            <Link href="/" className="flex items-center gap-2">
-              <Image 
-                src="/logo.png" 
-                alt="Rift" 
-                width={32} 
-                height={32}
-                className="h-6 w-6 sm:h-8 sm:w-8"
-              />
-              <span className="font-bold text-lg sm:text-xl text-[#1F2D3A]">Rift</span>
+            <Link href="/" className="flex items-center gap-2 group">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-br from-[#2E8C96] to-[#2A7A84] rounded-lg flex items-center justify-center text-white font-bold text-sm group-hover:shadow-lg transition-shadow">
+                R
+              </div>
+              <span className="font-bold text-lg sm:text-xl text-[#1F2D3A] group-hover:text-[#2E8C96] transition-colors">Rift</span>
             </Link>
 
             <div className="hidden gap-6 md:flex">

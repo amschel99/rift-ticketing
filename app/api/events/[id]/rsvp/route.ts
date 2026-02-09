@@ -158,12 +158,20 @@ export async function POST(
       },
     });
 
-    // If there's a pending invoice with a URL, return it
-    if (existingInvoice?.invoiceUrl) {
+    // If there's a pending invoice with a URL and the price hasn't changed, return it
+    if (existingInvoice?.invoiceUrl && existingInvoice.amount === event.price) {
       return NextResponse.json({
         success: true,
         paymentUrl: existingInvoice.invoiceUrl,
         message: 'Payment link already generated',
+      });
+    }
+
+    // If the price changed, mark the old invoice as stale so a new one is created
+    if (existingInvoice && existingInvoice.amount !== event.price) {
+      await prisma.invoice.update({
+        where: { id: existingInvoice.id },
+        data: { status: 'FAILED' },
       });
     }
 

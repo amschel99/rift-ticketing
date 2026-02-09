@@ -72,11 +72,7 @@ export function Navigation() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center justify-center w-9 h-9 rounded-full bg-neutral-100 dark:bg-neutral-800 border border-black/[0.05] dark:border-white/[0.05] overflow-hidden focus:outline-none transition-transform active:scale-95">
-                    {user.image ? (
-                        <img src={user.image} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                        <User className="w-4 h-4 text-neutral-500" />
-                    )}
+                    <User className="w-4 h-4 text-neutral-500" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-52 p-1.5 rounded-2xl mt-2 border-black/[0.08] dark:border-white/[0.08] shadow-2xl">

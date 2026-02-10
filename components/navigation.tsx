@@ -28,17 +28,9 @@ export function Navigation() {
   }, []);
 
   return (
-    <nav className="fixed top-0 z-[100] w-full flex justify-center pt-4 px-4 pointer-events-none">
+    <nav className="fixed top-0 left-0 right-0 z-[100] w-full flex justify-center px-4 bg-[#fafafa] dark:bg-[#090909]">
       <motion.div
-        className={`
-          pointer-events-auto
-          flex h-14 items-center justify-between w-full max-w-7xl
-          px-4 rounded-2xl transition-all duration-300
-          ${scrolled 
-            ? 'bg-white/80 dark:bg-black/80 backdrop-blur-xl border border-black/[0.05] dark:border-white/[0.05] shadow-[0_8px_30px_rgb(0,0,0,0.04)]' 
-            : 'bg-transparent border border-transparent'
-          }
-        `}
+        className={`flex h-14 items-center justify-between w-full max-w-7xl px-4 rounded-2xl transition-all duration-300 ${scrolled ? 'bg-white/80 dark:bg-black/80 backdrop-blur-xl border border-black/[0.05] dark:border-white/[0.05] shadow-[0_8px_30px_rgb(0,0,0,0.04)]' : ''}`}
       >
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-2 group">
@@ -153,10 +145,19 @@ export function Navigation() {
             <div className="flex flex-col gap-2">
               <Link href="/events" onClick={() => setIsOpen(false)} className="p-3 text-lg font-medium border-b border-neutral-50 dark:border-neutral-800">Explore</Link>
               {user && <Link href="/my-rsvps" onClick={() => setIsOpen(false)} className="p-3 text-lg font-medium border-b border-neutral-50 dark:border-neutral-800">My Events</Link>}
-              <Link href="/auth/login" onClick={() => setIsOpen(false)} className="p-3 text-lg font-medium">Log in</Link>
-              <Link href="/auth/signup" onClick={() => setIsOpen(false)}>
-                <Button className="w-full rounded-2xl h-12 bg-black dark:bg-white mt-2">Sign up</Button>
-              </Link>
+              {user && <Link href="/events/create" onClick={() => setIsOpen(false)} className="p-3 text-lg font-medium border-b border-neutral-50 dark:border-neutral-800">Create Event</Link>}
+              {user && <Link href="/wallet" onClick={() => setIsOpen(false)} className="p-3 text-lg font-medium border-b border-neutral-50 dark:border-neutral-800">Wallet</Link>}
+              {!user && <Link href="/auth/login" onClick={() => setIsOpen(false)} className="p-3 text-lg font-medium">Log in</Link>}
+              {!user && (
+                <Link href="/auth/signup" onClick={() => setIsOpen(false)}>
+                  <Button className="w-full rounded-2xl h-12 bg-black dark:bg-white mt-2">Sign up</Button>
+                </Link>
+              )}
+              {user && (
+                <button onClick={() => { logout(); setIsOpen(false); }} className="p-3 text-lg font-medium text-red-500 text-left">
+                  Logout
+                </button>
+              )}
             </div>
           </motion.div>
         )}

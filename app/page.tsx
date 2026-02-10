@@ -45,12 +45,12 @@ export default function HomePage() {
       <Navigation />
       
       {/* Hero Section - Framed by the fixed Navigation */}
-      <div className="relative h-[90vh] md:h-screen z-0">
+      <div className="relative z-0">
          <HeroSection />
       </div>
 
       {/* Main Content Area - Z-index context prevents bleeding */}
-      <main className="relative z-10 max-w-[1200px] mx-auto px-6 space-y-24 md:space-y-40 pb-32">
+      <main className="relative z-10 max-w-[1200px] mx-auto px-4 sm:px-6 space-y-16 md:space-y-24 lg:space-y-40 pb-20 md:pb-32">
         
         {/* 1. Featured Events - The "Postcard" Grid */}
         <section className="pt-12 md:pt-0">
@@ -60,7 +60,7 @@ export default function HomePage() {
                 <Sparkles className="w-3.5 h-3.5" />
                 Curated
               </div>
-              <h2 className="text-4xl md:text-6xl font-semibold tracking-tighter text-neutral-900 dark:text-white leading-[0.95]">
+              <h2 className="text-3xl md:text-4xl lg:text-6xl font-semibold tracking-tighter text-neutral-900 dark:text-white leading-[0.95]">
                 Discover <br className="hidden md:block" /> what&apos;s next.
               </h2>
             </div>
@@ -114,14 +114,14 @@ export default function HomePage() {
         </section>
 
         {/* 3. Final Mobile-Responsive CTA */}
-        <section className="relative rounded-[40px] md:rounded-[64px] bg-black dark:bg-white p-12 md:p-32 overflow-hidden text-center group">
-            <div className="relative z-10 space-y-10 md:space-y-14">
-                <h2 className="text-4xl md:text-8xl font-semibold text-white dark:text-black tracking-tighter leading-[0.9]">
+        <section className="relative rounded-[32px] md:rounded-[48px] lg:rounded-[64px] bg-black dark:bg-white p-8 md:p-16 lg:p-32 overflow-hidden text-center group">
+            <div className="relative z-10 space-y-8 md:space-y-14">
+                <h2 className="text-3xl md:text-5xl lg:text-8xl font-semibold text-white dark:text-black tracking-tighter leading-[0.9]">
                     Ready to bring <br /> people together?
                 </h2>
                 <div className="flex justify-center">
                     <Link href="/events/create">
-                        <Button size="lg" className="rounded-full bg-orange-600 hover:bg-orange-700 text-white px-12 h-16 md:h-20 text-lg md:text-xl font-bold shadow-2xl transition-transform hover:scale-105 active:scale-95">
+                        <Button size="lg" className="rounded-full bg-orange-600 hover:bg-orange-700 text-white px-8 md:px-12 h-14 md:h-16 lg:h-20 text-base md:text-lg lg:text-xl font-bold shadow-2xl transition-transform hover:scale-105 active:scale-95">
                             <Plus className="w-6 h-6 mr-3 stroke-[3]" />
                             Create your event
                         </Button>

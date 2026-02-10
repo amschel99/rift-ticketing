@@ -146,41 +146,43 @@ export async function POST(
       });
     }
 
-    // Check if there's already a pending invoice for this user/event
-    const existingInvoice = await prisma.invoice.findFirst({
-      where: {
-        userId: user.id,
-        eventId: eventId,
-        status: 'PENDING',
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-
-    // If there's a pending invoice with a URL and the price hasn't changed, return it
-    if (existingInvoice?.invoiceUrl && existingInvoice.amount === event.price) {
-      return NextResponse.json({
-        success: true,
-        paymentUrl: existingInvoice.invoiceUrl,
-        message: 'Payment link already generated',
-      });
-    }
-
-    // If the price changed, mark the old invoice as stale so a new one is created
-    if (existingInvoice && existingInvoice.amount !== event.price) {
-      await prisma.invoice.update({
-        where: { id: existingInvoice.id },
-        data: { status: 'FAILED' },
-      });
-    }
-
     // Get originUrl, orderId, and paymentMethod from request body
     const body = await request.json().catch(() => ({}));
-    const originUrl = body.originUrl || 
+    const originUrl = body.originUrl ||
       `${request.headers.get('origin') || request.headers.get('referer')?.split('/').slice(0, 3).join('/') || 'http://localhost:3000'}/events/${eventId}`;
-    const orderId = body.orderId;
+    const orderId = body.orderId || crypto.randomUUID();
     const paymentMethod = body.paymentMethod || 'invoice'; // 'invoice' or 'wallet'
+
+    // For invoice payments, check if there's already a pending invoice
+    if (paymentMethod === 'invoice') {
+      const existingInvoice = await prisma.invoice.findFirst({
+        where: {
+          userId: user.id,
+          eventId: eventId,
+          status: 'PENDING',
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      // If there's a pending invoice with a URL and the price hasn't changed, return it
+      if (existingInvoice?.invoiceUrl && existingInvoice.amount === event.price) {
+        return NextResponse.json({
+          success: true,
+          paymentUrl: existingInvoice.invoiceUrl,
+          message: 'Payment link already generated',
+        });
+      }
+
+      // If the price changed, mark the old invoice as stale so a new one is created
+      if (existingInvoice && existingInvoice.amount !== event.price) {
+        await prisma.invoice.update({
+          where: { id: existingInvoice.id },
+          data: { status: 'FAILED' },
+        });
+      }
+    }
 
     // If paying with wallet, check balance and send transaction
     if (paymentMethod === 'wallet') {

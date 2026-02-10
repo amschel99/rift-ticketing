@@ -126,7 +126,7 @@ export default function CreateEventPage() {
           transition={{ duration: 0.6 }}
         >
           <header className="mb-16 space-y-4">
-            <h1 className="text-5xl md:text-7xl font-semibold tracking-tighter text-neutral-900 dark:text-white leading-none">
+            <h1 className="text-4xl md:text-5xl lg:text-7xl font-semibold tracking-tighter text-neutral-900 dark:text-white leading-none">
               Create Event
             </h1>
             <p className="text-xl text-neutral-500 font-medium italic font-serif">A new experience begins here.</p>
@@ -142,7 +142,7 @@ export default function CreateEventPage() {
             {/* Image Upload - The "Poster" Spot */}
             <div className="space-y-4">
               <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-400">Event Cover</label>
-              <label className="relative block aspect-[16/7] w-full rounded-[32px] border-2 border-dashed border-black/[0.05] dark:border-white/[0.05] hover:border-orange-500/50 transition-all cursor-pointer overflow-hidden group">
+              <label className="relative block aspect-[16/9] md:aspect-[16/7] w-full rounded-[32px] border-2 border-dashed border-black/[0.05] dark:border-white/[0.05] hover:border-orange-500/50 transition-all cursor-pointer overflow-hidden group">
                 <input type="file" name="image" accept="image/*" onChange={handleChange} className="sr-only" />
                 {imagePreview ? (
                   <Image src={imagePreview} alt="Preview" fill className="object-cover" />
@@ -166,7 +166,7 @@ export default function CreateEventPage() {
                   value={formData.title}
                   onChange={handleChange}
                   placeholder="The Weekend Retreat"
-                  className="border-0 bg-transparent px-0 h-16 text-3xl md:text-5xl font-semibold placeholder:text-neutral-200 focus-visible:ring-0"
+                  className="border-0 bg-transparent px-0 h-14 md:h-16 text-2xl md:text-3xl lg:text-5xl font-semibold placeholder:text-neutral-200 focus-visible:ring-0"
                 />
               </div>
 

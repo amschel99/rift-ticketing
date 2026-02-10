@@ -86,8 +86,8 @@
   --secondary-foreground: #1F2D3A;
   --muted: #F8F9FA;
   --muted-foreground: #4A5568;
-  --accent: #D4A574;
-  --accent-foreground: #FFFFFF;
+  --accent: #F5F5F4;
+  --accent-foreground: #1C1917;
   --destructive: #e54d2e;
   --border: #E9F1F4;
   --input: #FFFFFF;
@@ -144,6 +144,10 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+  }
+  html, body {
+    margin: 0;
+    padding: 0;
   }
   body {
     @apply bg-background text-foreground;

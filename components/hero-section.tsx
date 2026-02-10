@@ -9,7 +9,7 @@ export function HeroSection() {
   const router = useRouter();
 
   return (
-    <section className="relative w-full min-h-[90vh] flex flex-col items-center justify-center bg-[#fafafa] dark:bg-[#090909] px-6">
+    <section className="relative w-full py-32 md:py-40 flex flex-col items-center justify-center bg-[#fafafa] dark:bg-[#090909] px-6">
       {/* Luma-style subtle background glow */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-full opacity-40 pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-orange-100 dark:bg-orange-950/20 blur-[120px] rounded-full" />
@@ -47,7 +47,7 @@ export function HeroSection() {
           {/* Action Area */}
           <div className="flex flex-col sm:flex-row items-center gap-4 w-full max-w-md">
             <Button
-              onClick={() => router.push('/create')}
+              onClick={() => router.push('/events/create')}
               className="w-full sm:flex-1 h-14 rounded-2xl bg-black dark:bg-white text-white dark:text-black hover:opacity-90 transition-all text-base font-medium shadow-xl"
             >
               <Plus className="w-5 h-5 mr-2" />
@@ -63,18 +63,6 @@ export function HeroSection() {
             </Button>
           </div>
 
-          {/* Minimal Social Proof / Trusted section */}
-          <div className="pt-12">
-            <p className="text-xs font-medium text-neutral-400 uppercase tracking-[0.2em] mb-6">
-              Trusted by creators at
-            </p>
-            <div className="flex flex-wrap justify-center gap-8 opacity-40 grayscale contrast-125">
-               {/* Replace with small, monochrome SVG logos */}
-               <div className="h-6 w-24 bg-neutral-400 rounded animate-pulse" />
-               <div className="h-6 w-20 bg-neutral-400 rounded animate-pulse" />
-               <div className="h-6 w-28 bg-neutral-400 rounded animate-pulse" />
-            </div>
-          </div>
         </motion.div>
       </div>
     </section>

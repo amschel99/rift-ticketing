@@ -25,6 +25,13 @@ export async function GET(
             status: true,
           },
         },
+        invoices: {
+          select: {
+            userId: true,
+            ticketEmailSent: true,
+            status: true,
+          },
+        },
       },
     });
 

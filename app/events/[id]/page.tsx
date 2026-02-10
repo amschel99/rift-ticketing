@@ -1,17 +1,23 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
-import { 
-  Calendar, MapPin, Users, Share2, Edit, Trash2, 
+import {
+  Calendar, MapPin, Users, Share2, Edit, Trash2,
   BarChart3, Mail, CheckCircle2, AlertCircle, ChevronLeft,
-  ArrowRight
+  ArrowRight, Copy, Check, MessageCircle
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { generateGoogleCalendarUrl } from '@/lib/calendar';
 
 export default function EventDetailsPage() {
@@ -20,6 +26,8 @@ export default function EventDetailsPage() {
   const { user, bearerToken } = useAuth();
   const eventId = params.id as string;
 
+  const searchParams = useSearchParams();
+
   const [event, setEvent] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -27,6 +35,47 @@ export default function EventDetailsPage() {
   const [isRsvping, setIsRsvping] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
   const [sellingRate, setSellingRate] = useState<number | null>(null);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [sendingTicket, setSendingTicket] = useState(false);
+  const [ticketSent, setTicketSent] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  // Handle Rift payment redirect: ?transaction_code=X&order_id=Y or ?hash=Z&order_id=Y
+  useEffect(() => {
+    const transactionCode = searchParams.get('transaction_code');
+    const orderId = searchParams.get('order_id');
+    const hash = searchParams.get('hash');
+
+    if ((transactionCode || hash) && orderId && bearerToken) {
+      setIsConfirming(true);
+      const confirmPayment = async () => {
+        try {
+          const response = await fetch(`/api/events/${eventId}/transaction`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${bearerToken}`,
+            },
+            body: JSON.stringify({ transactionCode, hash, orderId }),
+          });
+          const result = await response.json();
+          if (result.success && result.status !== 'pending') {
+            setHasRsvped(true);
+            setPaymentUrl(null);
+          } else if (!response.ok) {
+            setError(result.error || 'Payment confirmation failed');
+          }
+        } catch (err: any) {
+          setError(err.message || 'Failed to confirm payment');
+        } finally {
+          setIsConfirming(false);
+          // Clean up URL params
+          router.replace(`/events/${eventId}`);
+        }
+      };
+      confirmPayment();
+    }
+  }, [searchParams, bearerToken, eventId, router]);
 
   useEffect(() => {
     fetchEventDetails();
@@ -53,27 +102,37 @@ export default function EventDetailsPage() {
       if (user && data.rsvps) {
         setHasRsvped(data.rsvps.some((r: any) => r.userId === user.id && r.status === 'CONFIRMED'));
       }
+      if (user && data.invoices) {
+        const userInvoice = data.invoices.find((i: any) => i.userId === user.id && i.ticketEmailSent);
+        if (userInvoice) setTicketSent(true);
+      }
     } catch (err: any) { setError(err.message); }
     finally { setIsLoading(false); }
   };
 
-  const handleRsvp = async () => {
+  const handleRsvp = async (method: 'invoice' | 'wallet' = 'invoice') => {
     if (!user) { router.push('/auth/login'); return; }
     setIsRsvping(true);
+    setError('');
     try {
       const response = await fetch(`/api/events/${eventId}/rsvp`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${bearerToken}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ originUrl: window.location.href, paymentMethod: 'invoice' }),
+        body: JSON.stringify({ originUrl: window.location.href, paymentMethod: method }),
       });
       const result = await response.json();
-      if (result.paymentUrl) setPaymentUrl(result.paymentUrl);
-      else if (result.success) setHasRsvped(true);
+      if (!response.ok) {
+        setError(result.error || 'Failed to register');
+      } else if (result.paymentUrl) {
+        setPaymentUrl(result.paymentUrl);
+      } else if (result.success) {
+        setHasRsvped(true);
+      }
     } catch (err: any) { setError(err.message); }
     finally { setIsRsvping(false); }
   };
 
-  if (isLoading) return <div className="min-h-screen bg-white flex items-center justify-center font-medium text-neutral-400">Loading experience...</div>;
+  if (isLoading || isConfirming) return <div className="min-h-screen bg-white flex items-center justify-center font-medium text-neutral-400">{isConfirming ? 'Confirming your payment...' : 'Loading experience...'}</div>;
 
   const eventDate = new Date(event?.date);
   const isOrganizer = user && event && event.organizer.id === user.id;
@@ -100,13 +159,63 @@ export default function EventDetailsPage() {
                 </Link>
               </div>
             )}
-            <Button variant="outline" size="sm" className="rounded-full h-9 px-4 border-black/[0.08] dark:border-white/[0.08]">
-              <Share2 className="w-4 h-4 mr-2" /> Share
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="rounded-full h-9 px-4 border-black/[0.08] dark:border-white/[0.08]">
+                  <Share2 className="w-4 h-4 mr-2" /> Share
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52 p-1.5 rounded-2xl mt-2 border-black/[0.08] dark:border-white/[0.08] shadow-2xl">
+                <DropdownMenuItem
+                  className="rounded-xl cursor-pointer py-2.5"
+                  onClick={() => {
+                    const url = `${window.location.origin}/events/${eventId}`;
+                    const text = `Check out ${event?.title}`;
+                    window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
+                  }}
+                >
+                  <MessageCircle className="w-4 h-4 mr-2" /> WhatsApp
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="rounded-xl cursor-pointer py-2.5"
+                  onClick={() => {
+                    const url = `${window.location.origin}/events/${eventId}`;
+                    const text = `Check out ${event?.title}`;
+                    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
+                  }}
+                >
+                  <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                  X (Twitter)
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="rounded-xl cursor-pointer py-2.5"
+                  onClick={() => {
+                    const url = `${window.location.origin}/events/${eventId}`;
+                    const subject = event?.title || 'Check out this event';
+                    const body = `Hey, check out this event: ${event?.title}\n\n${url}`;
+                    window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+                  }}
+                >
+                  <Mail className="w-4 h-4 mr-2" /> Email
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="rounded-xl cursor-pointer py-2.5"
+                  onClick={() => {
+                    const url = `${window.location.origin}/events/${eventId}`;
+                    navigator.clipboard.writeText(url);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  }}
+                >
+                  {copied ? <Check className="w-4 h-4 mr-2 text-emerald-500" /> : <Copy className="w-4 h-4 mr-2" />}
+                  {copied ? 'Copied!' : 'Copy Link'}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16">
           
           {/* Left Column: Visuals & Content */}
           <div className="lg:col-span-7 space-y-12">
@@ -235,8 +344,29 @@ export default function EventDetailsPage() {
                         <CheckCircle2 className="w-5 h-5" />
                         You&apos;re attending
                       </div>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
+                        className="w-full rounded-2xl h-14 font-bold border-black/[0.08]"
+                        disabled={sendingTicket || ticketSent}
+                        onClick={async () => {
+                          setSendingTicket(true);
+                          try {
+                            const res = await fetch(`/api/rsvps/${eventId}/send-ticket`, {
+                              method: 'POST',
+                              headers: { 'Authorization': `Bearer ${bearerToken}` },
+                            });
+                            const data = await res.json();
+                            if (res.ok) { setError(''); setTicketSent(true); }
+                            else setError(data.error || 'Failed to send ticket');
+                          } catch { setError('Failed to send ticket email'); }
+                          finally { setSendingTicket(false); }
+                        }}
+                      >
+                        <Mail className="w-4 h-4 mr-2" />
+                        {ticketSent ? 'Ticket Sent!' : sendingTicket ? 'Sending...' : 'Send Ticket to Email'}
+                      </Button>
+                      <Button
+                        variant="outline"
                         className="w-full rounded-2xl h-14 font-bold border-black/[0.08]"
                         onClick={() => window.open(generateGoogleCalendarUrl({ title: event.title, description: event.description, location: event.location, startDate: eventDate }), '_blank')}
                       >
@@ -251,13 +381,25 @@ export default function EventDetailsPage() {
                       Complete Payment <ArrowRight className="w-4 h-4 ml-2" />
                     </Button>
                   ) : (
-                    <Button 
-                      onClick={handleRsvp} 
-                      disabled={isRsvping}
-                      className="w-full rounded-2xl h-14 bg-black dark:bg-white text-white dark:text-black font-bold shadow-xl hover:scale-[1.01] transition-transform active:scale-95"
-                    >
-                      {isRsvping ? 'Processing...' : 'Register for Event'}
-                    </Button>
+                    <div className="space-y-3">
+                      <Button
+                        onClick={() => handleRsvp('invoice')}
+                        disabled={isRsvping}
+                        className="w-full rounded-2xl h-14 bg-black dark:bg-white text-white dark:text-black font-bold shadow-xl hover:scale-[1.01] transition-transform active:scale-95"
+                      >
+                        {isRsvping ? 'Processing...' : event.price === 0 ? 'Register for Event' : 'Pay with M-Pesa or USDC'}
+                      </Button>
+                      {event.price > 0 && user && (
+                        <Button
+                          variant="outline"
+                          onClick={() => handleRsvp('wallet')}
+                          disabled={isRsvping}
+                          className="w-full rounded-2xl h-14 font-bold border-black/[0.08] dark:border-white/[0.08]"
+                        >
+                          {isRsvping ? 'Processing...' : 'Pay with Wallet'}
+                        </Button>
+                      )}
+                    </div>
                   )}
                   
                   {!user && (

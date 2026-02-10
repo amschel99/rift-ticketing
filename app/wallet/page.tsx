@@ -127,7 +127,7 @@ export default function WalletPage() {
               </div>
               
               <div className="space-y-1">
-                <div className="text-5xl md:text-7xl font-semibold tracking-tighter text-neutral-900 dark:text-white">
+                <div className="text-4xl md:text-5xl lg:text-7xl font-semibold tracking-tighter text-neutral-900 dark:text-white">
                   KES {balanceInKES?.toLocaleString('en-KE', { minimumFractionDigits: 2 })}
                 </div>
                 <div className="text-xl text-neutral-500 font-medium">
@@ -169,16 +169,16 @@ export default function WalletPage() {
                     <Input 
                       type="number" value={showTopup ? topupAmount : withdrawAmount} 
                       onChange={(e) => showTopup ? setTopupAmount(e.target.value) : setWithdrawAmount(e.target.value)}
-                      className="border-0 bg-transparent px-0 h-12 text-2xl font-semibold focus-visible:ring-0 shadow-none" placeholder="1,000" 
+                      className="border-0 bg-transparent px-0 h-12 text-xl md:text-2xl font-semibold focus-visible:ring-0 shadow-none" placeholder="1,000"
                     />
                   </div>
 
                   <div className="group border-b border-black/[0.05] dark:border-white/[0.05] focus-within:border-black dark:focus-within:border-white transition-colors pb-2">
                     <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-400">M-Pesa Number</label>
-                    <Input 
-                      type="tel" value={showTopup ? topupPhone : withdrawPhone} 
+                    <Input
+                      type="tel" value={showTopup ? topupPhone : withdrawPhone}
                       onChange={(e) => showTopup ? setTopupPhone(e.target.value) : setWithdrawPhone(e.target.value)}
-                      className="border-0 bg-transparent px-0 h-12 text-2xl font-semibold focus-visible:ring-0 shadow-none" placeholder="07..." 
+                      className="border-0 bg-transparent px-0 h-12 text-xl md:text-2xl font-semibold focus-visible:ring-0 shadow-none" placeholder="07..." 
                     />
                   </div>
 
@@ -204,7 +204,7 @@ export default function WalletPage() {
                 <span className="text-[10px] font-bold uppercase tracking-widest">Secured by Rift Custody</span>
             </div>
             {walletAddress && (
-                <div className="text-[10px] font-mono text-neutral-400 bg-neutral-100 dark:bg-white/5 px-4 py-2 rounded-full truncate max-w-xs">
+                <div className="text-[10px] font-mono text-neutral-400 bg-neutral-100 dark:bg-white/5 px-4 py-2 rounded-full truncate max-w-[260px] md:max-w-xs">
                     {walletAddress}
                 </div>
             )}

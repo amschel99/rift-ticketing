@@ -86,7 +86,7 @@ export default function MyRSVPsPage() {
       {/* Z-INDEX FIX: Ensure Navigation is fixed at the very top 
           of the stack with a higher z-index than main content. 
       */}
-      <div className="fixed top-0 left-0 right-0 z-[100] w-full pointer-events-none">
+      <div className="fixed top-0 left-0 right-0 z-[100] w-full ">
         <Navigation />
       </div>
       

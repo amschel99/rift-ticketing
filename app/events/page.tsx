@@ -160,7 +160,7 @@ export default function EventsPage() {
             <button
               key={cat}
               onClick={() => setCategory(cat)}
-              className={`whitespace-nowrap px-6 py-2 rounded-full text-[11px] font-bold tracking-widest uppercase transition-all border ${
+              className={`whitespace-nowrap px-4 md:px-6 py-2 rounded-full text-[11px] font-bold tracking-widest uppercase transition-all border ${
                 category === cat
                   ? 'bg-black dark:bg-white text-white dark:text-black border-transparent shadow-md'
                   : 'bg-transparent text-neutral-400 border-black/[0.05] dark:border-white/[0.05] hover:border-black/20 hover:text-neutral-900 dark:hover:text-white'
@@ -215,7 +215,7 @@ export default function EventsPage() {
                     <div className="flex items-center justify-between pt-1">
                         <div className="flex items-center text-neutral-400 text-xs font-medium">
                             <MapPin className="w-3.5 h-3.5 mr-1 stroke-[2.5]" />
-                            <span className="truncate max-w-[110px]">{event.isOnline ? 'Online' : event.location}</span>
+                            <span className="truncate max-w-[150px] sm:max-w-[110px]">{event.isOnline ? 'Online' : event.location}</span>
                         </div>
                         <div className="text-[13px] font-bold text-neutral-900 dark:text-neutral-100">
                             {event.price <= 0 ? 'Free' : `KES ${Math.round(eventPriceInKES || 0).toLocaleString()}`}

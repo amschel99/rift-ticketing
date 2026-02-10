@@ -3,40 +3,60 @@
   "short_name": "Hafla",
   "description": "Discover and book amazing events near you. Instant payments with M-Pesa and USDC.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#E9F1F4",
-  "theme_color": "#C85D2E",
+  "background_color": "#fafafa",
+  "theme_color": "#fafafa",
   "orientation": "portrait-primary",
+  "id": "/",
   "icons": [
     {
-      "src": "/logo.png",
+      "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "/logo.png",
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "categories": ["events", "entertainment", "lifestyle"],
-  "screenshots": [],
   "shortcuts": [
     {
       "name": "Browse Events",
       "short_name": "Events",
       "description": "Discover events near you",
       "url": "/events",
-      "icons": [{ "src": "/logo.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Create Event",
       "short_name": "Create",
       "description": "Create a new event",
       "url": "/events/create",
-      "icons": [{ "src": "/logo.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "My RSVPs",
+      "short_name": "RSVPs",
+      "description": "View your event tickets",
+      "url": "/my-rsvps",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }

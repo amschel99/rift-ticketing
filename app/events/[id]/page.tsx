@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -41,13 +41,29 @@ export default function EventDetailsPage() {
   const [copied, setCopied] = useState(false);
 
   // Handle Rift payment redirect: ?transaction_code=X&order_id=Y or ?hash=Z&order_id=Y
+  const paymentConfirmedRef = useRef(false);
+
+  // Show confirming state immediately when payment params are detected (before auth loads)
   useEffect(() => {
     const transactionCode = searchParams.get('transaction_code');
     const orderId = searchParams.get('order_id');
     const hash = searchParams.get('hash');
 
-    if ((transactionCode || hash) && orderId && bearerToken) {
+    if ((transactionCode || hash) && orderId && !paymentConfirmedRef.current) {
       setIsConfirming(true);
+    }
+  }, [searchParams]);
+
+  // Actually confirm payment once bearerToken is available
+  useEffect(() => {
+    if (paymentConfirmedRef.current) return;
+
+    const transactionCode = searchParams.get('transaction_code');
+    const orderId = searchParams.get('order_id');
+    const hash = searchParams.get('hash');
+
+    if ((transactionCode || hash) && orderId && bearerToken) {
+      paymentConfirmedRef.current = true;
       const confirmPayment = async () => {
         try {
           const response = await fetch(`/api/events/${eventId}/transaction`, {
@@ -132,7 +148,50 @@ export default function EventDetailsPage() {
     finally { setIsRsvping(false); }
   };
 
-  if (isLoading || isConfirming) return <div className="min-h-screen bg-white flex items-center justify-center font-medium text-neutral-400">{isConfirming ? 'Confirming your payment...' : 'Loading experience...'}</div>;
+  if (isLoading || isConfirming) return (
+    <div className="min-h-screen bg-[#fafafa] dark:bg-[#050505] flex items-center justify-center relative overflow-hidden">
+      {/* Background orbs */}
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-orange-200/20 dark:bg-orange-900/10 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/3 w-[250px] h-[250px] bg-orange-100/30 dark:bg-orange-950/10 blur-[100px] rounded-full pointer-events-none" />
+
+      <div className="relative z-10 flex flex-col items-center space-y-8">
+        {/* Animated rings */}
+        <div className="relative w-16 h-16 flex items-center justify-center">
+          <div className="absolute inset-0 rounded-full border-2 border-orange-500/20 animate-ping" style={{ animationDuration: '2s' }} />
+          <div className="absolute inset-1 rounded-full border border-black/[0.04] dark:border-white/[0.04]" />
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/20">
+            {isConfirming ? (
+              <svg className="w-4 h-4 text-white animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+            ) : (
+              <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+            )}
+          </div>
+        </div>
+
+        <div className="space-y-2 text-center">
+          <h2 className="text-lg font-semibold text-neutral-900 dark:text-white tracking-tight">
+            {isConfirming ? 'Confirming your payment' : 'Loading experience'}
+          </h2>
+          <p className="text-sm text-neutral-400 font-medium">
+            {isConfirming ? 'This will only take a moment.' : 'Preparing event details...'}
+          </p>
+        </div>
+
+        {/* Subtle progress dots */}
+        {isConfirming && (
+          <div className="flex items-center gap-1.5">
+            {[0, 1, 2].map(i => (
+              <div
+                key={i}
+                className="w-1.5 h-1.5 rounded-full bg-orange-500/60"
+                style={{ animation: 'pulse 1.4s ease-in-out infinite', animationDelay: `${i * 0.2}s` }}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 
   const eventDate = new Date(event?.date);
   const isOrganizer = user && event && event.organizer.id === user.id;

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hafla-v2';
+const CACHE_NAME = 'hafla-v3';
 const STATIC_ASSETS = [
   '/',
   '/events',
@@ -46,14 +46,18 @@ self.addEventListener('fetch', (event) => {
 
   // For navigation requests (HTML pages): network first, fallback to cache
   if (request.mode === 'navigate') {
+    // Use pathname-only URL for cache key so query params don't create separate entries.
+    // This ensures /events/[id]?transaction_code=X falls back to cached /events/[id]
+    // instead of the homepage when the network fails (e.g. during payment widget redirects).
+    const cacheUrl = url.origin + url.pathname;
     event.respondWith(
       fetch(request)
         .then((response) => {
           const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          caches.open(CACHE_NAME).then((cache) => cache.put(cacheUrl, clone));
           return response;
         })
-        .catch(() => caches.match(request).then((cached) => cached || caches.match('/')))
+        .catch(() => caches.match(cacheUrl).then((cached) => cached || caches.match('/')))
     );
     return;
   }

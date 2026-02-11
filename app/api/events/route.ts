@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, description, location, date, time, price, capacity, category, isOnline, image } = body;
+    const { title, description, location, date, time, dateTime, price, capacity, category, isOnline, image } = body;
 
     if (!title || !description || !date || price === undefined || price === null || !capacity || !category) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     const priceInKES = parseFloat(price);
     const priceInUSDC = Math.round((priceInKES / sellingRate) * 1e6) / 1e6;
 
-    const eventDateTime = new Date(`${date}T${time || '00:00'}`);
+    const eventDateTime = dateTime ? new Date(dateTime) : new Date(`${date}T${time || '00:00'}`);
 
     const newEvent = await prisma.event.create({
       data: {

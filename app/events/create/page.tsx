@@ -81,13 +81,15 @@ export default function CreateEventPage() {
         imageUrl = uploadData.imageUrl;
       }
 
+      // Construct date in local timezone and convert to ISO for correct UTC storage
+      const localDateTime = new Date(`${formData.date}T${formData.time || '00:00'}`);
       const response = await fetch('/api/events', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${bearerToken}`,
         },
-        body: JSON.stringify({ ...formData, image: imageUrl }),
+        body: JSON.stringify({ ...formData, image: imageUrl, dateTime: localDateTime.toISOString() }),
       });
 
       if (!response.ok) throw new Error('Failed to create event');
@@ -145,7 +147,11 @@ export default function CreateEventPage() {
               <label className="relative block aspect-[16/9] md:aspect-[16/7] w-full rounded-[32px] border-2 border-dashed border-black/[0.05] dark:border-white/[0.05] hover:border-orange-500/50 transition-all cursor-pointer overflow-hidden group">
                 <input type="file" name="image" accept="image/*" onChange={handleChange} className="sr-only" />
                 {imagePreview ? (
-                  <Image src={imagePreview} alt="Preview" fill className="object-cover" />
+                  <div className="absolute inset-0 bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center p-6">
+                    <div className="relative w-full h-full">
+                      <Image src={imagePreview} alt="Preview" fill className="object-contain" />
+                    </div>
+                  </div>
                 ) : (
                   <div className="absolute inset-0 flex flex-col items-center justify-center space-y-3">
                     <div className="w-12 h-12 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center group-hover:scale-110 transition-transform">

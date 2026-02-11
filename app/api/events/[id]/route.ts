@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserByToken } from '@/app/actions/auth';
+import rift from '@/lib/rift';
+import { OfframpCurrency } from '@rift-finance/wallet';
 
 export async function GET(
   request: NextRequest,
@@ -120,9 +122,25 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { title, description, location, date, time, price, capacity, category, isOnline } = body;
+    const { title, description, location, date, time, dateTime, price, capacity, category, isOnline } = body;
 
-    const eventDateTime = new Date(`${date}T${time || '00:00'}`);
+    // Use ISO dateTime from client (timezone-aware) if available, fallback to date+time
+    const eventDateTime = dateTime ? new Date(dateTime) : date ? new Date(`${date}T${time || '00:00'}`) : null;
+
+    // Price is in KES, convert to USD using selling_rate (same as create)
+    let priceInUSDC = event.price;
+    if (price !== undefined) {
+      if (!user.bearerToken) {
+        return NextResponse.json({ error: 'User not authenticated with Rift' }, { status: 401 });
+      }
+      rift.setBearerToken(user.bearerToken);
+      const exchangeResponse = await rift.offramp.previewExchangeRate({
+        currency: 'KES' as OfframpCurrency,
+      });
+      const sellingRate = exchangeResponse.selling_rate || exchangeResponse.rate || 1;
+      const priceInKES = parseFloat(price);
+      priceInUSDC = Math.round((priceInKES / sellingRate) * 1e6) / 1e6;
+    }
 
     const updatedEvent = await prisma.event.update({
       where: { id },
@@ -130,8 +148,8 @@ export async function PUT(
         title: title || event.title,
         description: description || event.description,
         location: location !== undefined ? location : event.location,
-        date: date ? eventDateTime : event.date,
-        price: price !== undefined ? parseFloat(price) : event.price,
+        date: eventDateTime || event.date,
+        price: priceInUSDC,
         capacity: capacity !== undefined ? parseInt(capacity) : event.capacity,
         category: category ? (category as any) : event.category,
         isOnline: isOnline !== undefined ? isOnline : event.isOnline,

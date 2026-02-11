@@ -69,36 +69,43 @@ export default function HomePage() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6">
             {isLoading ? (
               [...Array(4)].map((_, i) => (
-                <div key={i} className="aspect-[4/5] rounded-[32px] bg-neutral-200/50 dark:bg-neutral-900/50 animate-pulse" />
+                <div key={i} className="rounded-2xl overflow-hidden">
+                  <div className="aspect-[3/4] bg-neutral-200/50 dark:bg-neutral-900/50 animate-pulse" />
+                  <div className="p-4 space-y-2">
+                    <div className="h-3 w-20 bg-neutral-200/50 dark:bg-neutral-800 rounded animate-pulse" />
+                    <div className="h-4 w-full bg-neutral-200/50 dark:bg-neutral-800 rounded animate-pulse" />
+                  </div>
+                </div>
               ))
             ) : (
-              events.map((event) => (
-                <Link key={event.id} href={`/events/${event.id}`} className="group flex flex-col">
-                  {/* Image: Padded frame with object-contain for full visibility */}
-                  <div className="relative aspect-[4/5] rounded-[32px] overflow-hidden bg-white dark:bg-white/[0.02] border border-black/[0.03] dark:border-white/[0.03] mb-6 p-6 md:p-8 flex items-center justify-center transition-all duration-500 group-hover:shadow-2xl group-hover:shadow-black/[0.05] group-hover:-translate-y-1">
-                    <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-sm">
-                      <Image 
-                        src={event.image || '/placeholder.jpeg'} 
-                        alt={event.title} 
-                        fill 
-                        className="object-contain" 
-                      />
+              events.map((event) => {
+                const eventDate = new Date(event.date);
+                return (
+                  <Link key={event.id} href={`/events/${event.id}`} className="group">
+                    <div className="rounded-2xl overflow-hidden bg-white dark:bg-white/[0.03] border border-black/[0.05] dark:border-white/[0.06] transition-all duration-300 group-hover:shadow-xl group-hover:shadow-black/[0.08] group-hover:-translate-y-1">
+                      <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 dark:bg-neutral-900">
+                        <Image
+                          src={event.image || '/placeholder.jpeg'}
+                          alt={event.title}
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                        />
+                      </div>
+                      <div className="px-4 py-3.5 space-y-1">
+                        <p className="text-[11px] font-semibold text-orange-600 dark:text-orange-500">
+                          {eventDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · {eventDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                        <h3 className="font-semibold text-[15px] text-neutral-900 dark:text-white leading-snug truncate">
+                          {event.title}
+                        </h3>
+                      </div>
                     </div>
-                  </div>
-
-                  <div className="space-y-1.5 px-1">
-                    <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-600 dark:text-orange-500">
-                        {new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} • {event.category}
-                    </div>
-                    <h3 className="text-lg font-semibold text-neutral-900 dark:text-white leading-tight tracking-tight truncate">
-                      {event.title}
-                    </h3>
-                  </div>
-                </Link>
-              ))
+                  </Link>
+                );
+              })
             )}
           </div>
         </section>

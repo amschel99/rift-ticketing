@@ -32,6 +32,7 @@ export default function WalletPage() {
   const [isToppingUp, setIsToppingUp] = useState(false);
 
   useEffect(() => {
+    console.log("Balance:", balance, "KES:", balanceInKES, "Buying Rate:", buyingRate, "Selling Rate:", sellingRate);
     if (!authLoading && !user) {
       router.push('/auth/login');
       return;

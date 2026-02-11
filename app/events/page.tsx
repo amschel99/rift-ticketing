@@ -173,9 +173,16 @@ export default function EventsPage() {
 
         {/* Gallery Grid */}
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6">
             {[...Array(8)].map((_, i) => (
-              <div key={i} className="aspect-[4/5] rounded-[32px] bg-neutral-200/50 dark:bg-neutral-900 animate-pulse" />
+              <div key={i} className="rounded-2xl overflow-hidden">
+                <div className="aspect-[3/4] bg-neutral-200/50 dark:bg-neutral-900 animate-pulse" />
+                <div className="p-4 space-y-2">
+                  <div className="h-3 w-24 bg-neutral-200/50 dark:bg-neutral-800 rounded animate-pulse" />
+                  <div className="h-4 w-full bg-neutral-200/50 dark:bg-neutral-800 rounded animate-pulse" />
+                  <div className="h-3 w-16 bg-neutral-200/50 dark:bg-neutral-800 rounded animate-pulse" />
+                </div>
+              </div>
             ))}
           </div>
         ) : filteredEvents.length === 0 ? (
@@ -187,39 +194,38 @@ export default function EventsPage() {
             <p className="text-neutral-500 text-sm">Try searching for something else or browse another category.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6">
             {filteredEvents.map(event => {
               const eventDate = new Date(event.date);
               const eventPriceInKES = sellingRate ? (event.price * sellingRate) : null;
 
               return (
-                <Link key={event.id} href={`/events/${event.id}`} className="group flex flex-col">
-                  <div className="relative aspect-[4/5] rounded-[32px] overflow-hidden bg-white dark:bg-[#0c0c0c] border border-black/[0.03] dark:border-white/[0.03] mb-5 p-8 flex items-center justify-center transition-all duration-300 group-hover:shadow-2xl group-hover:shadow-black/[0.04] group-hover:-translate-y-1">
-                    <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-sm">
-                      <Image 
-                        src={event.image || '/placeholder.jpeg'} 
-                        alt={event.title} 
-                        fill 
-                        className="object-contain" 
+                <Link key={event.id} href={`/events/${event.id}`} className="group">
+                  <div className="rounded-2xl overflow-hidden bg-white dark:bg-white/[0.03] border border-black/[0.05] dark:border-white/[0.06] transition-all duration-300 group-hover:shadow-xl group-hover:shadow-black/[0.08] group-hover:-translate-y-1">
+                    <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 dark:bg-neutral-900">
+                      <Image
+                        src={event.image || '/placeholder.jpeg'}
+                        alt={event.title}
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                       />
                     </div>
-                  </div>
-
-                  <div className="space-y-1.5 px-1">
-                    <div className="flex items-center gap-2 text-orange-600 dark:text-orange-500 text-[10px] font-bold uppercase tracking-[0.2em]">
-                        {eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} • {eventDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                    <h3 className="text-lg font-semibold text-neutral-900 dark:text-white leading-tight tracking-tight group-hover:opacity-70 transition-opacity truncate">
-                      {event.title}
-                    </h3>
-                    <div className="flex items-center justify-between pt-1">
+                    <div className="px-4 py-3.5 space-y-1.5">
+                      <p className="text-[11px] font-semibold text-orange-600 dark:text-orange-500">
+                        {eventDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · {eventDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                      <h3 className="font-semibold text-[15px] text-neutral-900 dark:text-white leading-snug truncate">
+                        {event.title}
+                      </h3>
+                      <div className="flex items-center justify-between">
                         <div className="flex items-center text-neutral-400 text-xs font-medium">
-                            <MapPin className="w-3.5 h-3.5 mr-1 stroke-[2.5]" />
-                            <span className="truncate max-w-[150px] sm:max-w-[110px]">{event.isOnline ? 'Online' : event.location}</span>
+                          <MapPin className="w-3 h-3 mr-1 stroke-[2.5]" />
+                          <span className="truncate max-w-[120px]">{event.isOnline ? 'Online' : event.location}</span>
                         </div>
-                        <div className="text-[13px] font-bold text-neutral-900 dark:text-neutral-100">
-                            {event.price <= 0 ? 'Free' : `KES ${Math.round(eventPriceInKES || 0).toLocaleString()}`}
-                        </div>
+                        <span className="text-xs font-bold text-neutral-900 dark:text-neutral-100">
+                          {event.price <= 0 ? 'Free' : `KES ${Math.round(eventPriceInKES || 0).toLocaleString()}`}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </Link>

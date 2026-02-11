@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/auth-context';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ChevronLeft, Globe, MapPin, Clock, Users, DollarSign, Sparkles } from 'lucide-react';
+import { ChevronLeft, Globe, MapPin, Clock, Users, Wallet, Sparkles } from 'lucide-react';
 
 export default function EditEventPage() {
   const params = useParams();
@@ -17,6 +17,7 @@ export default function EditEventPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
+  const [sellingRate, setSellingRate] = useState<number | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -34,8 +35,23 @@ export default function EditEventPage() {
       router.push('/auth/login');
       return;
     }
-    fetchEvent();
+    fetchExchangeRate().then(() => fetchEvent());
   }, [eventId, user, bearerToken]);
+
+  const fetchExchangeRate = async () => {
+    try {
+      const response = await fetch('/api/wallet/balance', {
+        headers: { 'Authorization': `Bearer ${bearerToken}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const rate = data.sellingRate || data.exchangeRate;
+        setSellingRate(rate);
+        return rate;
+      }
+    } catch (err) { console.error('Rate fetch error:', err); }
+    return null;
+  };
 
   const fetchEvent = async () => {
     try {
@@ -50,13 +66,23 @@ export default function EditEventPage() {
       }
 
       const eventDate = new Date(data.date);
+      const year = eventDate.getFullYear();
+      const month = String(eventDate.getMonth() + 1).padStart(2, '0');
+      const day = String(eventDate.getDate()).padStart(2, '0');
+      const hours = String(eventDate.getHours()).padStart(2, '0');
+      const minutes = String(eventDate.getMinutes()).padStart(2, '0');
+
+      // Convert stored USD price back to KES for display
+      const rate = sellingRate || await fetchExchangeRate();
+      const priceInKES = rate ? Math.round(data.price * rate) : data.price;
+
       setFormData({
         title: data.title,
         description: data.description,
-        date: eventDate.toISOString().split('T')[0],
-        time: eventDate.toTimeString().slice(0, 5),
+        date: `${year}-${month}-${day}`,
+        time: `${hours}:${minutes}`,
         location: data.location,
-        price: data.price.toString(),
+        price: priceInKES.toString(),
         capacity: data.capacity.toString(),
         category: data.category,
         isOnline: data.isOnline,
@@ -80,13 +106,18 @@ export default function EditEventPage() {
     e.preventDefault();
     setIsSaving(true);
     try {
+      // Construct date in local timezone and convert to ISO for correct UTC storage
+      const localDateTime = new Date(`${formData.date}T${formData.time || '00:00'}`);
       const response = await fetch(`/api/events/${eventId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${bearerToken}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          dateTime: localDateTime.toISOString(),
+        }),
       });
 
       if (!response.ok) throw new Error('Failed to update event');
@@ -188,9 +219,16 @@ export default function EditEventPage() {
 
               <div className="space-y-2 border-b border-black/[0.05] dark:border-white/[0.05] pb-2 focus-within:border-black dark:focus-within:border-white transition-colors">
                 <label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-400">
-                  <DollarSign className="w-3 h-3" /> Admission (USD)
+                  <Wallet className="w-3 h-3" /> Admission (KES)
                 </label>
-                <Input type="number" name="price" value={formData.price} onChange={handleChange} className="border-0 bg-transparent px-0 h-8 focus-visible:ring-0 font-medium text-sm" placeholder="0.00" />
+                <div className="flex items-center gap-3">
+                  <Input type="number" name="price" value={formData.price} onChange={handleChange} className="border-0 bg-transparent px-0 h-8 focus-visible:ring-0 font-medium text-sm w-32" placeholder="0" />
+                  {formData.price && sellingRate && (
+                    <span className="text-xs font-bold text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded-md">
+                      ≈ {(parseFloat(formData.price) / sellingRate).toFixed(2)} USD
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 

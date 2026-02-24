@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getUserByToken } from '@/app/actions/auth';
 import rift from '@/lib/rift';
 import { OfframpCurrency } from '@rift-finance/wallet';
+import { generateSlug } from '@/lib/utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,23 +31,31 @@ export async function POST(request: NextRequest) {
     }
 
     // Price is in KES, convert to USD using selling_rate (for invoice payments)
-    rift.setBearerToken(user.bearerToken);
-    const exchangeResponse = await rift.offramp.previewExchangeRate({
-      currency: 'KES' as OfframpCurrency,
-    });
-    const sellingRate = exchangeResponse.selling_rate || exchangeResponse.rate || 1;
     const priceInKES = parseFloat(price);
-    const priceInUSDC = Math.round((priceInKES / sellingRate) * 1e6) / 1e6;
+    let priceInUSDC = 0;
+
+    if (priceInKES > 0) {
+      rift.setBearerToken(user.bearerToken);
+      const exchangeResponse = await rift.offramp.previewExchangeRate({
+        currency: 'KES' as OfframpCurrency,
+      });
+      const sellingRate = exchangeResponse.selling_rate || exchangeResponse.rate || 1;
+      priceInUSDC = Math.round((priceInKES / sellingRate) * 1e6) / 1e6;
+    }
 
     const eventDateTime = dateTime ? new Date(dateTime) : new Date(`${date}T${time || '00:00'}`);
+
+    const slug = generateSlug(title);
 
     const newEvent = await prisma.event.create({
       data: {
         title,
+        slug,
         description,
         location: location || '',
         date: eventDateTime,
-        price: priceInUSDC, // Store in USD
+        price: priceInUSDC,
+        priceKES: priceInKES,
         capacity: parseInt(capacity),
         category: category as any,
         isOnline: isOnline || false,

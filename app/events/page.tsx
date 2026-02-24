@@ -12,11 +12,13 @@ import Image from 'next/image';
 
 interface Event {
   id: string;
+  slug?: string | null;
   title: string;
   description: string;
   date: string;
   location: string;
   price: number;
+  priceKES?: number | null;
   category: string;
   isOnline: boolean;
   image?: string | null;
@@ -120,7 +122,7 @@ export default function EventsPage() {
                 {filteredEvents.slice(0, 5).map((event) => (
                   <Link
                     key={event.id}
-                    href={`/events/${event.id}`}
+                    href={`/events/${event.slug || event.id}`}
                     onClick={() => setShowSearchDropdown(false)}
                     className="block p-4 hover:bg-neutral-50 dark:hover:bg-white/5 border-b border-black/[0.03] dark:border-white/[0.03] last:border-b-0 transition-colors"
                   >
@@ -197,10 +199,11 @@ export default function EventsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6">
             {filteredEvents.map(event => {
               const eventDate = new Date(event.date);
-              const eventPriceInKES = sellingRate ? (event.price * sellingRate) : null;
+              // Use locked KES price if available, fall back to USD*rate for old events
+              const eventPriceInKES = event.priceKES ?? (sellingRate ? (event.price * sellingRate) : null);
 
               return (
-                <Link key={event.id} href={`/events/${event.id}`} className="group">
+                <Link key={event.id} href={`/events/${event.slug || event.id}`} className="group">
                   <div className="rounded-2xl overflow-hidden bg-white dark:bg-white/[0.03] border border-black/[0.05] dark:border-white/[0.06] transition-all duration-300 group-hover:shadow-xl group-hover:shadow-black/[0.08] group-hover:-translate-y-1">
                     <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 dark:bg-neutral-900">
                       <Image
@@ -223,7 +226,7 @@ export default function EventsPage() {
                           <span className="truncate max-w-[120px]">{event.isOnline ? 'Online' : event.location}</span>
                         </div>
                         <span className="text-xs font-bold text-neutral-900 dark:text-neutral-100">
-                          {event.price <= 0 ? 'Free' : `KES ${Math.round(eventPriceInKES || 0).toLocaleString()}`}
+                          {(event.priceKES != null ? event.priceKES <= 0 : event.price <= 0) ? 'Free' : `KES ${Math.round(eventPriceInKES || 0).toLocaleString()}`}
                         </span>
                       </div>
                     </div>

@@ -4,13 +4,18 @@ import { getUserByToken } from '@/app/actions/auth';
 import rift from '@/lib/rift';
 import { sendEmail, createPaymentConfirmationEmail } from '@/lib/email';
 import { validateOnchainUsdcPayment } from '@/lib/onchain-validation';
+import { resolveEventId } from '@/lib/resolve-event';
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
-    const { id: eventId } = await Promise.resolve(params);
+    const { id: idOrSlug } = await Promise.resolve(params);
+    const eventId = await resolveEventId(idOrSlug);
+    if (!eventId) {
+      return NextResponse.json({ error: 'Event not found' }, { status: 404 });
+    }
     const authHeader = request.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

@@ -195,6 +195,7 @@ export default function EventDetailsPage() {
 
   const eventDate = new Date(event?.date);
   const isOrganizer = user && event && event.organizer.id === user.id;
+  const eventSlug = event?.slug || eventId;
 
   return (
     <div className="min-h-screen bg-[#fafafa] dark:bg-[#050505] selection:bg-orange-100 pb-20">
@@ -210,10 +211,10 @@ export default function EventDetailsPage() {
           <div className="flex items-center gap-3">
             {isOrganizer && (
               <div className="flex items-center gap-2 mr-4 border-r pr-4 border-black/5">
-                <Link href={`/events/${eventId}/dashboard`}>
+                <Link href={`/events/${eventSlug}/dashboard`}>
                   <Button variant="ghost" size="sm" className="rounded-full h-9"><BarChart3 className="w-4 h-4 mr-2" /> Stats</Button>
                 </Link>
-                <Link href={`/events/${eventId}/edit`}>
+                <Link href={`/events/${eventSlug}/edit`}>
                   <Button variant="ghost" size="sm" className="rounded-full h-9"><Edit className="w-4 h-4 mr-2" /> Edit</Button>
                 </Link>
               </div>
@@ -228,7 +229,7 @@ export default function EventDetailsPage() {
                 <DropdownMenuItem
                   className="rounded-xl cursor-pointer py-2.5"
                   onClick={() => {
-                    const url = `${window.location.origin}/events/${eventId}`;
+                    const url = `${window.location.origin}/events/${eventSlug}`;
                     const text = `Check out ${event?.title}`;
                     window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
                   }}
@@ -238,7 +239,7 @@ export default function EventDetailsPage() {
                 <DropdownMenuItem
                   className="rounded-xl cursor-pointer py-2.5"
                   onClick={() => {
-                    const url = `${window.location.origin}/events/${eventId}`;
+                    const url = `${window.location.origin}/events/${eventSlug}`;
                     const text = `Check out ${event?.title}`;
                     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
                   }}
@@ -249,7 +250,7 @@ export default function EventDetailsPage() {
                 <DropdownMenuItem
                   className="rounded-xl cursor-pointer py-2.5"
                   onClick={() => {
-                    const url = `${window.location.origin}/events/${eventId}`;
+                    const url = `${window.location.origin}/events/${eventSlug}`;
                     const subject = event?.title || 'Check out this event';
                     const body = `Hey, check out this event: ${event?.title}\n\n${url}`;
                     window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
@@ -260,7 +261,7 @@ export default function EventDetailsPage() {
                 <DropdownMenuItem
                   className="rounded-xl cursor-pointer py-2.5"
                   onClick={() => {
-                    const url = `${window.location.origin}/events/${eventId}`;
+                    const url = `${window.location.origin}/events/${eventSlug}`;
                     navigator.clipboard.writeText(url);
                     setCopied(true);
                     setTimeout(() => setCopied(false), 2000);
@@ -393,7 +394,7 @@ export default function EventDetailsPage() {
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-neutral-500 font-medium">Admission</span>
                     <span className="text-2xl font-bold text-neutral-900 dark:text-white">
-                      {event.price === 0 ? 'Free' : `KES ${Math.round(event.price * (sellingRate || 1)).toLocaleString()}`}
+                      {(event.priceKES != null ? event.priceKES <= 0 : event.price <= 0) ? 'Free' : `KES ${Math.round(event.priceKES ?? (event.price * (sellingRate || 1))).toLocaleString()}`}
                     </span>
                   </div>
 
@@ -446,9 +447,9 @@ export default function EventDetailsPage() {
                         disabled={isRsvping}
                         className="w-full rounded-2xl h-14 bg-black dark:bg-white text-white dark:text-black font-bold shadow-xl hover:scale-[1.01] transition-transform active:scale-95"
                       >
-                        {isRsvping ? 'Processing...' : event.price === 0 ? 'Register for Event' : 'Pay with M-Pesa or USDC'}
+                        {isRsvping ? 'Processing...' : (event.priceKES != null ? event.priceKES <= 0 : event.price <= 0) ? 'Register for Event' : 'Pay with M-Pesa or USDC'}
                       </Button>
-                      {event.price > 0 && user && (
+                      {(event.priceKES != null ? event.priceKES > 0 : event.price > 0) && user && (
                         <Button
                           variant="outline"
                           onClick={() => handleRsvp('wallet')}

@@ -18,6 +18,7 @@ interface RSVP {
   createdAt: string;
   event: {
     id: string;
+    slug?: string | null;
     title: string;
     date: string;
     location: string;
@@ -155,7 +156,7 @@ export default function TicketsPage() {
                     <div className="flex flex-wrap items-center gap-4 pt-4">
                         <Button 
                             variant="outline"
-                            onClick={() => router.push(`/events/${event.id}`)}
+                            onClick={() => router.push(`/events/${event.slug || event.id}`)}
                             className="rounded-full h-10 px-6 border-black/[0.08] dark:border-white/[0.08] text-xs font-bold uppercase tracking-wider transition-all hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black"
                         >
                             Event Details

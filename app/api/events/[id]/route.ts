@@ -3,15 +3,22 @@ import { prisma } from '@/lib/prisma';
 import { getUserByToken } from '@/app/actions/auth';
 import rift from '@/lib/rift';
 import { OfframpCurrency } from '@rift-finance/wallet';
+import { resolveEventId } from '@/lib/resolve-event';
+import { generateSlug } from '@/lib/utils';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
-    const { id } = await Promise.resolve(params);
+    const { id: idOrSlug } = await Promise.resolve(params);
+    const eventId = await resolveEventId(idOrSlug);
+    if (!eventId) {
+      return NextResponse.json({ error: 'Event not found' }, { status: 404 });
+    }
+
     const event = await prisma.event.findUnique({
-      where: { id },
+      where: { id: eventId },
       include: {
         organizer: {
           select: {
@@ -53,7 +60,12 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
-    const { id } = await Promise.resolve(params);
+    const { id: idOrSlug } = await Promise.resolve(params);
+    const eventId = await resolveEventId(idOrSlug);
+    if (!eventId) {
+      return NextResponse.json({ error: 'Event not found' }, { status: 404 });
+    }
+
     const authHeader = request.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -66,9 +78,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if event exists and user is the organizer
     const event = await prisma.event.findUnique({
-      where: { id },
+      where: { id: eventId },
     });
 
     if (!event) {
@@ -80,7 +91,7 @@ export async function DELETE(
     }
 
     await prisma.event.delete({
-      where: { id },
+      where: { id: eventId },
     });
 
     return NextResponse.json({ success: true });
@@ -95,7 +106,12 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
-    const { id } = await Promise.resolve(params);
+    const { id: idOrSlug } = await Promise.resolve(params);
+    const eventId = await resolveEventId(idOrSlug);
+    if (!eventId) {
+      return NextResponse.json({ error: 'Event not found' }, { status: 404 });
+    }
+
     const authHeader = request.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -108,9 +124,8 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if event exists and user is the organizer
     const event = await prisma.event.findUnique({
-      where: { id },
+      where: { id: eventId },
     });
 
     if (!event) {
@@ -129,27 +144,40 @@ export async function PUT(
 
     // Price is in KES, convert to USD using selling_rate (same as create)
     let priceInUSDC = event.price;
+    let priceInKES = event.priceKES;
     if (price !== undefined) {
-      if (!user.bearerToken) {
-        return NextResponse.json({ error: 'User not authenticated with Rift' }, { status: 401 });
+      priceInKES = parseFloat(price);
+      if (priceInKES > 0) {
+        if (!user.bearerToken) {
+          return NextResponse.json({ error: 'User not authenticated with Rift' }, { status: 401 });
+        }
+        rift.setBearerToken(user.bearerToken);
+        const exchangeResponse = await rift.offramp.previewExchangeRate({
+          currency: 'KES' as OfframpCurrency,
+        });
+        const sellingRate = exchangeResponse.selling_rate || exchangeResponse.rate || 1;
+        priceInUSDC = Math.round((priceInKES / sellingRate) * 1e6) / 1e6;
+      } else {
+        priceInUSDC = 0;
       }
-      rift.setBearerToken(user.bearerToken);
-      const exchangeResponse = await rift.offramp.previewExchangeRate({
-        currency: 'KES' as OfframpCurrency,
-      });
-      const sellingRate = exchangeResponse.selling_rate || exchangeResponse.rate || 1;
-      const priceInKES = parseFloat(price);
-      priceInUSDC = Math.round((priceInKES / sellingRate) * 1e6) / 1e6;
     }
 
+    // Generate slug if title changed or event has no slug yet
+    const newTitle = title || event.title;
+    const slug = (title && title !== event.title) || !event.slug
+      ? generateSlug(newTitle)
+      : event.slug;
+
     const updatedEvent = await prisma.event.update({
-      where: { id },
+      where: { id: eventId },
       data: {
-        title: title || event.title,
+        title: newTitle,
+        slug,
         description: description || event.description,
         location: location !== undefined ? location : event.location,
         date: eventDateTime || event.date,
         price: priceInUSDC,
+        priceKES: priceInKES,
         capacity: capacity !== undefined ? parseInt(capacity) : event.capacity,
         category: category ? (category as any) : event.category,
         isOnline: isOnline !== undefined ? isOnline : event.isOnline,

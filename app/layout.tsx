@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { Providers } from '@/components/providers'
 import { ServiceWorkerRegistration } from '@/components/service-worker-registration'
+import { InstallPrompt } from '@/components/install-prompt'
 import './globals.css'
 
 const geist = Geist({ 
@@ -103,6 +104,7 @@ export default function RootLayout({
         </Providers>
         <Analytics />
         <ServiceWorkerRegistration />
+        <InstallPrompt />
       </body>
     </html>
   )

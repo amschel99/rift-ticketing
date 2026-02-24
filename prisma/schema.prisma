@@ -51,6 +51,7 @@ model User {
 
 model Event {
   id               String    @id @default(cuid())
+  slug             String?   @unique
   title            String
   description      String    @db.Text
   image            String?
@@ -59,6 +60,7 @@ model Event {
   location         String
   isOnline         Boolean   @default(false)
   price            Float
+  priceKES         Float?
   capacity         Int
   organizerId      String
   shareableUrl     String    @unique @default(uuid())

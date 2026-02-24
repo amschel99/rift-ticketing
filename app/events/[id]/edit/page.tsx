@@ -72,9 +72,9 @@ export default function EditEventPage() {
       const hours = String(eventDate.getHours()).padStart(2, '0');
       const minutes = String(eventDate.getMinutes()).padStart(2, '0');
 
-      // Convert stored USD price back to KES for display
+      // Use locked KES price if available, fall back to USD*rate for old events
       const rate = sellingRate || await fetchExchangeRate();
-      const priceInKES = rate ? Math.round(data.price * rate) : data.price;
+      const priceInKES = data.priceKES ?? (rate ? Math.round(data.price * rate) : data.price);
 
       setFormData({
         title: data.title,
@@ -121,7 +121,8 @@ export default function EditEventPage() {
       });
 
       if (!response.ok) throw new Error('Failed to update event');
-      router.push(`/events/${eventId}`);
+      const updatedEvent = await response.json();
+      router.push(`/events/${updatedEvent.slug || eventId}`);
     } catch (err: any) {
       setError(err.message);
     } finally {

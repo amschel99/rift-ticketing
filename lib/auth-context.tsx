@@ -39,50 +39,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (externalId: string, password: string): Promise<boolean> => {
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ externalId, password }),
-      });
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ externalId, password }),
+    });
 
-      if (!response.ok) {
-        return false;
-      }
+    const data = await response.json();
 
-      const data = await response.json();
-      
-      localStorage.setItem('bearerToken', data.bearerToken);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      
-      setBearerToken(data.bearerToken);
-      setUser(data.user);
-      
-      return true;
-    } catch (error) {
-      console.error('Login error:', error);
-      return false;
+    if (!response.ok) {
+      throw new Error(data.error || 'Login failed');
     }
+
+    localStorage.setItem('bearerToken', data.bearerToken);
+    localStorage.setItem('user', JSON.stringify(data.user));
+
+    setBearerToken(data.bearerToken);
+    setUser(data.user);
+
+    return true;
   };
 
   const signup = async (externalId: string, password: string): Promise<boolean> => {
-    try {
-      const response = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ externalId, password }),
-      });
+    const response = await fetch('/api/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ externalId, password }),
+    });
 
-      if (!response.ok) {
-        return false;
-      }
+    const data = await response.json();
 
-      // After signup, auto-login
-      return await login(externalId, password);
-    } catch (error) {
-      console.error('Signup error:', error);
-      return false;
+    if (!response.ok) {
+      throw new Error(data.error || 'Signup failed');
     }
+
+    // After signup, auto-login
+    return await login(externalId, password);
   };
 
   const logout = () => {

@@ -26,7 +26,7 @@ const getEmailTemplate = (content: string) => `
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rift Finance</title>
+  <title>Hafla Events</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
   <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f5f5f5;">
@@ -35,7 +35,7 @@ const getEmailTemplate = (content: string) => `
         <table role="presentation" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
           <tr>
             <td style="padding: 40px 40px 20px; text-align: center; background: linear-gradient(135deg, #2E8C96 0%, #2A7A84 100%); border-radius: 8px 8px 0 0;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">Rift Finance</h1>
+              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">Hafla Events</h1>
             </td>
           </tr>
           <tr>
@@ -46,7 +46,7 @@ const getEmailTemplate = (content: string) => `
           <tr>
             <td style="padding: 20px 40px; background-color: #f8f9fa; border-radius: 0 0 8px 8px; text-align: center; border-top: 1px solid #e9ecef;">
               <p style="margin: 0; color: #6c757d; font-size: 14px; line-height: 1.5;">
-                This is an automated email from Rift Finance. Please save this email for your records.
+                This is an automated email from Hafla Events. Please save this email for your records.
               </p>
             </td>
           </tr>
@@ -127,7 +127,7 @@ export const createPaymentConfirmationEmail = (data: EventEmailData): string => 
     </p>
     <p style="margin: 20px 0 0; color: #4A5568; font-size: 16px; line-height: 1.6;">
       Best regards,<br>
-      <strong style="color: #2E8C96;">Rift Finance Team</strong>
+      <strong style="color: #2E8C96;">The Hafla Team</strong>
     </p>
   `;
   return getEmailTemplate(content);
@@ -210,7 +210,7 @@ export const createTicketEmail = (data: EventEmailData): string => {
     </p>
     <p style="margin: 20px 0 0; color: #4A5568; font-size: 16px; line-height: 1.6;">
       Best regards,<br>
-      <strong style="color: #2E8C96;">Rift Finance Team</strong>
+      <strong style="color: #2E8C96;">The Hafla Team</strong>
     </p>
   `;
   return getEmailTemplate(content);
@@ -226,7 +226,7 @@ export const sendEmail = async (options: EmailOptions) => {
       "recipientEmails": [options.to],
       "emailBody": emailBody,
       "subject": options.subject,
-      "senderName": "Rift Finance",
+      "senderName": "Hafla Events",
       "senderEmail": "sphere@cradlevoices.com"
     }, {});
 

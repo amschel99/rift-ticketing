@@ -48,14 +48,10 @@ export default function SignupPage() {
 
     setIsLoading(true);
     try {
-      const success = await signup(externalId, password);
-      if (success) {
-        router.push('/events');
-      } else {
-        setError('Signup failed. Please try again.');
-      }
+      await signup(externalId, password);
+      router.push('/events');
     } catch (err: any) {
-      setError(err.message || 'Signup failed');
+      setError(err.message || 'Signup failed. Please try again.');
     } finally {
       setIsLoading(false);
     }

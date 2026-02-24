@@ -4,13 +4,18 @@ import { getUserByToken } from '@/app/actions/auth';
 import rift from '@/lib/rift';
 import { OfframpCurrency } from '@rift-finance/wallet';
 import { sendEmail, createPaymentConfirmationEmail } from '@/lib/email';
+import { resolveEventId } from '@/lib/resolve-event';
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
-    const { id: eventId } = await Promise.resolve(params);
+    const { id: idOrSlug } = await Promise.resolve(params);
+    const eventId = await resolveEventId(idOrSlug);
+    if (!eventId) {
+      return NextResponse.json({ error: 'Event not found' }, { status: 404 });
+    }
     const authHeader = request.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -63,8 +68,11 @@ export async function POST(
       return NextResponse.json({ error: 'Event is full' }, { status: 400 });
     }
 
-    // Check if event is free (price === 0)
-    const isFreeEvent = event.price === 0 || event.price <= 0;
+    // Use locked KES price if available, otherwise fall back to USD price
+    const lockedPriceKES = event.priceKES;
+
+    // Check if event is free
+    const isFreeEvent = lockedPriceKES !== null ? lockedPriceKES <= 0 : (event.price === 0 || event.price <= 0);
 
     // For free events, skip payment and directly create RSVP
     if (isFreeEvent) {
@@ -166,8 +174,9 @@ export async function POST(
         },
       });
 
-      // If there's a pending invoice with a URL and the price hasn't changed, return it
-      if (existingInvoice?.invoiceUrl && existingInvoice.amount === event.price) {
+      // If there's a pending invoice with a URL, return it
+      // (price is re-computed at payment time from locked KES, so existing invoice is still valid)
+      if (existingInvoice?.invoiceUrl) {
         return NextResponse.json({
           success: true,
           paymentUrl: existingInvoice.invoiceUrl,
@@ -175,8 +184,8 @@ export async function POST(
         });
       }
 
-      // If the price changed, mark the old invoice as stale so a new one is created
-      if (existingInvoice && existingInvoice.amount !== event.price) {
+      // If there's an old pending invoice without a URL, mark it stale
+      if (existingInvoice && !existingInvoice.invoiceUrl) {
         await prisma.invoice.update({
           where: { id: existingInvoice.id },
           data: { status: 'FAILED' },
@@ -197,16 +206,17 @@ export async function POST(
       // Check user's wallet balance
       rift.setBearerToken(user.bearerToken);
       
-      // Get exchange rate - use buying_rate for wallet payments
+      // Get exchange rate - use selling_rate to convert locked KES → USD at current rate
       const exchangeResponse = await rift.offramp.previewExchangeRate({
         currency: 'KES' as OfframpCurrency,
       });
-      const buyingRate = exchangeResponse.buying_rate || exchangeResponse.rate || 1;
-      
-      // Event price is in USD, convert to KES for display, then back to USD for payment
-      // For wallet payments, we use buying_rate
-      const priceInKES = event.price * buyingRate;
-      const priceInUSDC = event.price; // Already in USD
+      const sellingRate = exchangeResponse.selling_rate || exchangeResponse.rate || 1;
+
+      // Convert locked KES price to USD at current rate for wallet payment
+      // Fall back to stored USD price for old events without priceKES
+      const priceInUSDC = lockedPriceKES !== null
+        ? Math.round((lockedPriceKES / sellingRate) * 1e6) / 1e6
+        : event.price;
 
       const balanceResponse = await rift.wallet.getTokenBalance({
         token: 'USDC',
@@ -246,7 +256,7 @@ export async function POST(
           data: {
             userId: user.id,
             eventId: eventId,
-            amount: event.price,
+            amount: priceInUSDC,
             currency: 'USDC',
             chain: 'BASE',
             status: 'CONFIRMED',
@@ -350,15 +360,17 @@ export async function POST(
       // Set bearer token for Rift SDK using organizer's token
       rift.setBearerToken(event.organizer.bearerToken);
 
-      // Get exchange rate - use selling_rate for invoice payments
-      const exchangeResponse = await rift.offramp.previewExchangeRate({
+      // Get exchange rate - use selling_rate to convert locked KES → USD at current rate
+      const invoiceExchangeResponse = await rift.offramp.previewExchangeRate({
         currency: 'KES' as OfframpCurrency,
       });
-      const sellingRate = exchangeResponse.selling_rate || exchangeResponse.rate || 1;
-      
-      // Event price is already stored in USD, use it directly for invoice
-      // selling_rate is used when user pays with invoice (they pay in KES, we convert to USD)
-      const invoiceAmount = event.price; // Already in USD
+      const invoiceSellingRate = invoiceExchangeResponse.selling_rate || invoiceExchangeResponse.rate || 1;
+
+      // Convert locked KES price to USD at current rate for invoice
+      // Fall back to stored USD price for old events without priceKES
+      const invoiceAmount = lockedPriceKES !== null
+        ? Math.round((lockedPriceKES / invoiceSellingRate) * 1e6) / 1e6
+        : event.price;
 
       // Create invoice using Rift SDK merchant API
       // Pass orderId (camelCase) so Rift can include it in the redirect URL
@@ -390,7 +402,7 @@ export async function POST(
         data: {
           userId: user.id,
           eventId: eventId,
-          amount: event.price,
+          amount: invoiceAmount,
           currency: 'USDC',
           chain: 'BASE',
           invoiceUrl: paymentUrl,

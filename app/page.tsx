@@ -13,6 +13,7 @@ import Image from 'next/image';
 
 interface Event {
   id: string;
+  slug?: string | null;
   title: string;
   description: string;
   date: string;
@@ -84,7 +85,7 @@ export default function HomePage() {
               events.map((event) => {
                 const eventDate = new Date(event.date);
                 return (
-                  <Link key={event.id} href={`/events/${event.id}`} className="group">
+                  <Link key={event.id} href={`/events/${event.slug || event.id}`} className="group">
                     <div className="rounded-2xl overflow-hidden bg-white dark:bg-white/[0.03] border border-black/[0.05] dark:border-white/[0.06] transition-all duration-300 group-hover:shadow-xl group-hover:shadow-black/[0.08] group-hover:-translate-y-1">
                       <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100 dark:bg-neutral-900">
                         <Image

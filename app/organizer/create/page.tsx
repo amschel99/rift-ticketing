@@ -72,7 +72,7 @@ export default function CreateEventPage() {
       }
 
       const event = await response.json();
-      router.push(`/events/${event.id}`);
+      router.push(`/events/${event.slug || event.id}`);
     } catch (err: any) {
       setError(err.message || 'Failed to create event');
     } finally {

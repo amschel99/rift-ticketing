@@ -37,14 +37,10 @@ export default function LoginPage() {
 
     setIsLoading(true);
     try {
-      const success = await login(externalId, password);
-      if (success) {
-        router.push('/events');
-      } else {
-        setError('Invalid credentials. Please try again.');
-      }
+      await login(externalId, password);
+      router.push('/events');
     } catch (err: any) {
-      setError(err.message || 'Login failed');
+      setError(err.message || 'Login failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -104,7 +100,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <Button 
+          <Button
             type="submit" 
             disabled={isLoading} 
             className="w-full rounded-full h-14 bg-black dark:bg-white text-white dark:text-black font-bold text-lg shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all mt-4"
@@ -113,12 +109,19 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        <p className="text-center text-sm font-medium text-neutral-500">
-          Don&apos;t have an account?{' '}
-          <Link href="/auth/signup" className="text-black dark:text-white font-bold hover:underline">
-            Sign up
-          </Link>
-        </p>
+        <div className="space-y-3">
+          <p className="text-center text-sm font-medium text-neutral-500">
+            Don&apos;t have an account?{' '}
+            <Link href="/auth/signup" className="text-black dark:text-white font-bold hover:underline">
+              Sign up
+            </Link>
+          </p>
+          <p className="text-center text-sm font-medium text-neutral-500">
+            <Link href="/auth/forgot-password" className="text-black dark:text-white font-bold hover:underline">
+              Forgot password?
+            </Link>
+          </p>
+        </div>
       </motion.div>
 
       {/* Subtle Luma-style decorative orbs */}

@@ -3,19 +3,8 @@
 import { prisma } from "@/lib/prisma";
 import rift from "@/lib/rift";
 
-// Email validation function
-function isValidEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-}
-
-export async function signupAction(externalId: string, password: string, email?: string, displayName?: string) {
+export async function signupAction(externalId: string, password: string) {
   try {
-    // Validate that externalId is a valid email
-    if (!isValidEmail(externalId)) {
-      return { error: "Username must be a valid email address" };
-    }
-
     // Check if user already exists in our DB
     const existingUser = await prisma.user.findUnique({
       where: { externalId },
@@ -25,35 +14,29 @@ export async function signupAction(externalId: string, password: string, email?:
       return { error: "User already exists" };
     }
 
-    // Since users signup with email as username, externalId is the email
-    // Use externalId as the email (it's already validated as email above)
-    const userEmail = email || externalId;
-
-    // Create user in Rift
+    // Create user in Rift — only externalId and password
     const riftSignupResponse = await rift.auth.signup({
       externalId,
       password,
-      email: userEmail,
-      displayName: displayName || externalId,
-    });
+    } as any);
 
-    // After signup, automatically login to get the JWT token
+    // After signup, login to get JWT token
     const riftLoginResponse = await rift.auth.login({
       externalId,
       password,
     });
     const accessToken = riftLoginResponse.accessToken;
-    const walletAddress = riftLoginResponse.address; // Get wallet address from login
+    const walletAddress = riftLoginResponse.address;
 
-    // Store user in our database with the JWT token and wallet address
+    // Store user in our database
     const user = await prisma.user.create({
       data: {
         externalId,
-        email: userEmail,
-        name: displayName || externalId,
+        email: externalId,
+        name: externalId,
         riftUserId: riftSignupResponse.userId,
-        bearerToken: accessToken, // Save JWT token from Rift
-        walletAddress: walletAddress, // Save wallet address
+        bearerToken: accessToken,
+        walletAddress: walletAddress,
         role: "USER",
       },
       select: {
@@ -70,27 +53,38 @@ export async function signupAction(externalId: string, password: string, email?:
 
     return { success: true, user, bearerToken: accessToken };
   } catch (error: any) {
-    console.error("Signup error:", error);
-    return { error: error.message || "Signup failed" };
+    console.error("Signup error:", {
+      message: error.message,
+      status: error.status,
+      error: error.error,
+      stack: error.stack,
+    });
+
+    // Categorize errors for better UI messages
+    const msg = (error.message || "").toLowerCase();
+    if (msg.includes("authentication failed") || msg.includes("login processing")) {
+      return { error: "Unable to connect to authentication service. Please try again later." };
+    }
+    if (msg.includes("already exists") || msg.includes("duplicate")) {
+      return { error: "An account with this email already exists. Try logging in instead." };
+    }
+    if (msg.includes("network") || msg.includes("fetch") || msg.includes("econnrefused")) {
+      return { error: "Network error. Please check your connection and try again." };
+    }
+    return { error: error.message || "Signup failed. Please try again." };
   }
 }
 
 export async function loginAction(externalId: string, password: string) {
   try {
-    // Validate that externalId is a valid email
-    if (!isValidEmail(externalId)) {
-      return { error: "Username must be a valid email address" };
-    }
-
-    // Login with Rift SDK
+    // Login with Rift SDK — only externalId and password
     const riftLoginResponse = await rift.auth.login({
       externalId,
       password,
     });
 
-    // Rift SDK automatically sets the bearer token internally
-    // But we need to store it for our API routes
     const accessToken = riftLoginResponse.accessToken;
+    const walletAddress = riftLoginResponse.address;
 
     // Find or create user in our database
     let user = await prisma.user.findUnique({
@@ -108,25 +102,15 @@ export async function loginAction(externalId: string, password: string) {
     });
 
     if (!user) {
-      // User exists in Rift but not in our DB - create it
-      // Get user info from Rift
-      rift.setBearerToken(accessToken);
-      const riftUserResponse = await rift.auth.getUser();
-      const riftUser = riftUserResponse.user;
-      const walletAddress = riftLoginResponse.address; // Get wallet address from login
-
-      // Use externalId as email (it's already validated as email above)
-      const userEmail = riftUser.email || externalId;
-
+      // User exists in Rift but not in our DB — create it
       user = await prisma.user.create({
         data: {
-          externalId: riftUser.externalId || externalId,
-          email: userEmail,
-          name: riftUser.displayName || undefined,
-          riftUserId: riftUser.id,
+          externalId,
+          email: externalId,
+          name: externalId,
           role: "USER",
           bearerToken: accessToken,
-          walletAddress: walletAddress, // Save wallet address
+          walletAddress: walletAddress,
         },
         select: {
           id: true,
@@ -140,17 +124,15 @@ export async function loginAction(externalId: string, password: string) {
         },
       });
     } else {
-      // Update bearer token and wallet address in our DB
-      const walletAddress = riftLoginResponse.address; // Get wallet address from login
+      // Update bearer token and wallet address
       await prisma.user.update({
         where: { id: user.id },
-        data: { 
+        data: {
           bearerToken: accessToken,
-          walletAddress: walletAddress, // Update wallet address
+          walletAddress: walletAddress,
         },
       });
-      
-      // Fetch updated user with select to match type
+
       user = await prisma.user.findUnique({
         where: { id: user.id },
         select: {
@@ -178,8 +160,28 @@ export async function loginAction(externalId: string, password: string) {
       bearerToken: accessToken,
     };
   } catch (error: any) {
-    console.error("Login error:", error);
-    return { error: error.message || "Invalid credentials" };
+    console.error("Login error:", {
+      message: error.message,
+      status: error.status,
+      error: error.error,
+      stack: error.stack,
+    });
+
+    // Categorize errors for better UI messages
+    const msg = (error.message || "").toLowerCase();
+    if (msg.includes("authentication failed") || msg.includes("login processing")) {
+      return { error: "Authentication service error. Please try again later or contact support." };
+    }
+    if (msg.includes("invalid") || msg.includes("incorrect") || msg.includes("wrong")) {
+      return { error: "Invalid email or password. Please check your credentials." };
+    }
+    if (msg.includes("not found") || msg.includes("no user")) {
+      return { error: "No account found with this email. Please sign up first." };
+    }
+    if (msg.includes("network") || msg.includes("fetch") || msg.includes("econnrefused")) {
+      return { error: "Network error. Please check your connection and try again." };
+    }
+    return { error: error.message || "Login failed. Please try again." };
   }
 }
 

@@ -65,10 +65,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to get exchange rate' }, { status: 500 });
     }
 
-    // Step 2: Calculate USD amount from KES amount
-    // Amount is in KES, convert to USD using buying_rate
+    // Step 2: Calculate USD amount from KES amount (10% platform fee)
     const amountKES = typeof amount === 'number' ? amount : parseFloat(amount);
-    const usdAmount = Math.round((amountKES / buyingRate) * 1e6) / 1e6;
+    const feeKES = Math.round(amountKES * 0.10 * 100) / 100; // 10% fee
+    const netAmountKES = amountKES - feeKES;
+    const usdAmount = Math.round((netAmountKES / buyingRate) * 1e6) / 1e6;
 
     // Step 3: Format phone number for Kenya (07XXXXXXXX format)
     const formattedPhone = formatKenyaPhone(phoneNumber);
@@ -95,6 +96,9 @@ export async function POST(request: NextRequest) {
       orderId: withdrawResponse.order.id,
       transactionCode: withdrawResponse.order.transactionCode,
       status: withdrawResponse.order.status,
+      amountKES,
+      feeKES,
+      netAmountKES,
       message: 'Withdrawal initiated successfully',
     });
   } catch (error: any) {

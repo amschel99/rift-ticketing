@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserByToken } from '@/app/actions/auth';
 import { sendEmail, createTicketEmail } from '@/lib/email';
+import { resolveEventId } from '@/lib/resolve-event';
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ eventId: string }> | { eventId: string } }
 ) {
   try {
-    const { eventId } = await Promise.resolve(params);
+    const { eventId: eventIdOrSlug } = await Promise.resolve(params);
     const authHeader = request.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -23,6 +24,12 @@ export async function POST(
 
     if (!user.email) {
       return NextResponse.json({ error: 'User email not found' }, { status: 400 });
+    }
+
+    // Resolve slug to actual event ID
+    const eventId = await resolveEventId(eventIdOrSlug);
+    if (!eventId) {
+      return NextResponse.json({ error: 'Event not found' }, { status: 404 });
     }
 
     // Check if RSVP exists and is confirmed

@@ -2,9 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { reconcilePendingPayments } from '@/lib/reconcile-payments';
 
 export async function GET(request: NextRequest) {
-  // Verify the request is from Vercel Cron (or has the correct secret)
+  // Simple auth: check for secret in query param or authorization header
+  const secret = request.nextUrl.searchParams.get('secret');
   const authHeader = request.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  const expected = process.env.CRON_SECRET;
+
+  const isAuthorized =
+    (expected && secret === expected) ||
+    (expected && authHeader === `Bearer ${expected}`) ||
+    !expected; // If no CRON_SECRET set, allow (for testing)
+
+  if (!isAuthorized) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

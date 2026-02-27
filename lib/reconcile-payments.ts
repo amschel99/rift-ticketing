@@ -3,7 +3,7 @@ import rift from '@/lib/rift';
 import { sendEmail, createPaymentConfirmationEmail } from '@/lib/email';
 
 const TWO_MINUTES = 2 * 60 * 1000;
-const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
 
 let isRunning = false;
 
@@ -17,14 +17,14 @@ export async function reconcilePendingPayments() {
 
     // Find PENDING invoices with a payment URL (invoice flow only),
     // older than 2 minutes (give client-side redirect time),
-    // younger than 24 hours (don't bother with ancient ones)
+    // younger than 7 days
     const pendingInvoices = await prisma.invoice.findMany({
       where: {
         status: 'PENDING',
         invoiceUrl: { not: null },
         createdAt: {
           lt: new Date(now - TWO_MINUTES),
-          gt: new Date(now - TWENTY_FOUR_HOURS),
+          gt: new Date(now - SEVEN_DAYS),
         },
       },
       include: {
